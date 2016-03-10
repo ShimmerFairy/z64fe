@@ -5,6 +5,7 @@
  */
 
 #include "ROMFileModel.hpp"
+#include "utility.hpp"
 
 #include <QBrush>
 
@@ -33,7 +34,7 @@ QVariant ROMFileModel::data(const QModelIndex & index, int role) const {
             break;
 
           case 1:
-            return QString("0x%1").arg(data_src->fileidx(index.row()).pend, 0, 16);
+            return QString(sizeToIEC(data_src->fileidx(index.row()).psize()).c_str());
             break;
 
           case 2:
@@ -41,7 +42,7 @@ QVariant ROMFileModel::data(const QModelIndex & index, int role) const {
             break;
 
           case 3:
-            return QString("0x%1").arg(data_src->fileidx(index.row()).vend, 0, 16);
+            return QString(sizeToIEC(data_src->fileidx(index.row()).vsize()).c_str());
             break;
         }
 
@@ -69,7 +70,7 @@ QVariant ROMFileModel::headerData(int sect, Qt::Orientation orient, int role) co
             break;
 
           case 1:
-            return "ROM After-Last";
+            return "ROM Size";
             break;
 
           case 2:
@@ -77,7 +78,7 @@ QVariant ROMFileModel::headerData(int sect, Qt::Orientation orient, int role) co
             break;
 
           case 3:
-            return "Virtual After-Last";
+            return "Virtual Size";
             break;
         }
 

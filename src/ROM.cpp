@@ -12,10 +12,14 @@ bool ROMRecord::isMissing() { return pstart == 0xFFFF'FFFF && pend == 0xFFFF'FFF
 
 size_t ROMRecord::psize() {
     if (pend == 0) {
-        return vend - vstart;
+        return vsize();
     } else {
         return pend - pstart;
     }
+}
+
+size_t ROMRecord::vsize() {
+    return vend - vstart;
 }
 
 ROM::ROM(const std::vector<uint8_t> & rd) : rawData(rd) { }

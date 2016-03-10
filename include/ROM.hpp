@@ -19,6 +19,7 @@ struct ROMRecord {
     bool isCompressed();
     bool isMissing();
     size_t psize();
+    size_t vsize();
 };
 
 class ROM {
