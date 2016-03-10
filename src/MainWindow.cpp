@@ -5,6 +5,7 @@
  */
 
 #include "MainWindow.hpp"
+#include "utility.hpp"
 
 #include <QFileDialog>
 #include <QMessageBox>
@@ -20,8 +21,26 @@ MainWindow::MainWindow() {
     filesView = new QTableView;
     qhb = new QHBoxLayout;
     rominfo = new QGroupBox(tr("ROM Info"));
+    rigrid = new QGridLayout;
+
+    rnamekey = new QLabel(tr("ROM Name:"));
+    rnameval = new QLabel;
+    rcodekey = new QLabel(tr("ROM Code:"));
+    rcodeval = new QLabel;
+    rsizekey = new QLabel(tr("ROM Size:"));
+    rsizeval = new QLabel;
+
     fileinfo = new QGroupBox(tr("File Info"));
     the_rom_model = nullptr;
+
+    rigrid->addWidget(rnamekey, 0, 0, Qt::AlignRight);
+    rigrid->addWidget(rnameval, 0, 1, Qt::AlignLeft);
+    rigrid->addWidget(rcodekey, 1, 0, Qt::AlignRight);
+    rigrid->addWidget(rcodeval, 1, 1, Qt::AlignLeft);
+    rigrid->addWidget(rsizekey, 2, 0, Qt::AlignRight);
+    rigrid->addWidget(rsizeval, 2, 1, Qt::AlignLeft);
+
+    rominfo->setLayout(rigrid);
 
     qhb->addWidget(rominfo);
     qhb->addWidget(fileinfo);
@@ -176,20 +195,23 @@ void MainWindow::processROM(std::string fileName) {
 
     size_t numfiles;
 
-    try {
-        numfiles = the_rom.bootstrapTOC(foundPos + 0x30);
-    } catch (char const * str) {
-        QMessageBox::critical(this, tr("God"), str);
-        throw 42;
-    }
+    numfiles = the_rom.bootstrapTOC(foundPos + 0x30);
 
     // if we haven't loaded a ROM before, set up everything we need
     if (the_rom_model == nullptr) {
         the_rom_model = new ROMFileModel(&the_rom);
         filesView->setModel(the_rom_model);
+
+        filesView->setSelectionMode(QAbstractItemView::SingleSelection);
+        filesView->setSelectionBehavior(QAbstractItemView::SelectRows);
     } else {
         the_rom_model->endResetting();
     }
+
+    // now to set up ROM info labels
+    rnameval->setText(the_rom.get_rname().c_str());
+    rcodeval->setText(the_rom.get_rcode().c_str());
+    rsizeval->setText(sizeToIEC(the_rom.size()).c_str());
 
     statusBar()->showMessage(tr("Found %1 files in the list.").arg(numfiles), 5000);
 }

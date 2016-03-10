@@ -30,7 +30,7 @@ QVariant ROMFileModel::data(const QModelIndex & index, int role) const {
     if (role == Qt::DisplayRole) {
         switch (index.column()) {
           case 0:
-            return QString("0x%1").arg(data_src->fileidx(index.row()).pstart, 0, 16);
+            return QString("0x%1").arg(QString("%1").arg(data_src->fileidx(index.row()).pstart, 0, 16).toUpper());
             break;
 
           case 1:
@@ -38,7 +38,7 @@ QVariant ROMFileModel::data(const QModelIndex & index, int role) const {
             break;
 
           case 2:
-            return QString("0x%1").arg(data_src->fileidx(index.row()).vstart, 0, 16);
+            return QString("0x%1").arg(QString("%1").arg(data_src->fileidx(index.row()).vstart, 0, 16).toUpper());
             break;
 
           case 3:

@@ -86,3 +86,14 @@ size_t ROM::bootstrapTOC(size_t firstEntry) {
 
 size_t ROM::numfiles() { return fileList.size(); }
 ROMRecord ROM::fileidx(size_t idx) { return fileList.at(idx); }
+
+size_t ROM::size() { return rawData.size(); }
+
+std::string ROM::get_rname() {
+    // lazy way to read until null byte
+    return std::string(reinterpret_cast<char*>(rawData.data()) + 0x20);
+}
+
+std::string ROM::get_rcode() {
+    return std::string(rawData.begin() + 0x3B, rawData.begin() + 0x3F);
+}

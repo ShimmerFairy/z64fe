@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <vector>
 #include <cstddef>
+#include <string>
 
 struct ROMRecord {
     uint32_t vstart;
@@ -37,4 +38,9 @@ class ROM {
 
     size_t numfiles();
     ROMRecord fileidx(size_t idx);
+
+    size_t size();
+
+    std::string get_rname();
+    std::string get_rcode();
 };

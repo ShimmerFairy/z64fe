@@ -16,6 +16,8 @@
 #include <QGroupBox>
 #include <QMenuBar>
 #include <QAction>
+#include <QLabel>
+#include <QGridLayout>
 
 #include <cstdint>
 #include <vector>
@@ -35,6 +37,14 @@ class MainWindow : public QMainWindow {
 
     QGroupBox * rominfo;
     QGroupBox * fileinfo;
+
+    QGridLayout * rigrid;
+    QLabel * rnamekey;
+    QLabel * rnameval;
+    QLabel * rcodekey;
+    QLabel * rcodeval;
+    QLabel * rsizekey;
+    QLabel * rsizeval;
 
 
     QMenu * fileMenu;
