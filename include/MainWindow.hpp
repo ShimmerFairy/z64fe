@@ -8,6 +8,7 @@
 
 #include "ROM.hpp"
 #include "ROMFileModel.hpp"
+#include "HexViewer.hpp"
 
 #include <QMainWindow>
 #include <QTableView>
@@ -29,6 +30,8 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 
   private:
+    std::vector<QWidget *> childWindows;
+
     QWidget * dummy;
 
     QVBoxLayout * qvb;
@@ -76,11 +79,14 @@ class MainWindow : public QMainWindow {
     void processROM(std::string fileName);
 
     QFrame * makeGridLine(Qt::Orientation orient);
-
   private slots:
     void openROM();
 
     void chooseFile(const QModelIndex & cur, const QModelIndex & old);
+
+    void openRawView();
+
+    void rmWindow(QObject * item);
 
   public:
     MainWindow();

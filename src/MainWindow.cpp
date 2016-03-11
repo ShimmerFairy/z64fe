@@ -10,6 +10,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QStatusBar>
+#include <QHeaderView>
 
 #include <iostream>
 #include <fstream>
@@ -58,7 +59,7 @@ MainWindow::MainWindow() {
     femptyval = new QLabel;
 
     hexviewbtn = new QPushButton(tr("&View Raw File"));
-    hexviewbtn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    connect(hexviewbtn, &QPushButton::clicked, this, &MainWindow::openRawView);
 
     figrid->addWidget(fplockey, 0, 0, Qt::AlignRight);
     figrid->addWidget(fplocval, 0, 1, Qt::AlignLeft);
@@ -300,5 +301,37 @@ QFrame * MainWindow::makeGridLine(Qt::Orientation orient) {
         qline->setFrameShape(QFrame::VLine);
         qline->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
         return qline;
+    }
+}
+
+void MainWindow::openRawView() {
+    QTableView * newview = new QTableView;
+    HexFileModel * hfm = new HexFileModel(curfile, newview);
+
+    newview->setFont(QFont("monospace"));
+
+    newview->setModel(hfm);
+
+    newview->setAttribute(Qt::WA_DeleteOnClose);
+
+    newview->horizontalHeader()->setResizeContentsPrecision(1);
+    newview->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+    newview->verticalHeader()->setResizeContentsPrecision(1);
+    newview->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+
+    newview->resizeColumnsToContents();
+    newview->resizeRowsToContents();
+
+    connect(newview, &QTableView::destroyed, this, &MainWindow::rmWindow);
+
+    childWindows.push_back(newview);
+
+    newview->show();
+}
+
+void MainWindow::rmWindow(QObject * item) {
+    auto pntat = std::find(childWindows.begin(), childWindows.end(), item);
+    if (pntat != childWindows.end()) {
+        childWindows.erase(pntat);
     }
 }

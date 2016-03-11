@@ -7,10 +7,10 @@
 #include "ROM.hpp"
 #include "endian.hpp"
 
-bool ROMRecord::isCompressed() { return pend != 0 && !isMissing(); }
-bool ROMRecord::isMissing() { return pstart == 0xFFFF'FFFF && pend == 0xFFFF'FFFF; }
+bool ROMRecord::isCompressed() const { return pend != 0 && !isMissing(); }
+bool ROMRecord::isMissing() const { return pstart == 0xFFFF'FFFF && pend == 0xFFFF'FFFF; }
 
-size_t ROMRecord::psize() {
+size_t ROMRecord::psize() const {
     if (pend == 0) {
         return vsize();
     } else {
@@ -18,15 +18,17 @@ size_t ROMRecord::psize() {
     }
 }
 
-size_t ROMRecord::vsize() {
+size_t ROMRecord::vsize() const {
     return vend - vstart;
 }
 
 ROMFile::ROMFile(const std::vector<uint8_t> & fd, const ROMRecord & fa) : fileData(fd),
                                                                           foundAt(fa) { }
 
-ROMRecord ROMFile::record() { return foundAt; }
-size_t ROMFile::size() { return fileData.size(); }
+ROMRecord ROMFile::record() const { return foundAt; }
+size_t ROMFile::size() const { return fileData.size(); }
+
+uint8_t ROMFile::at(size_t idx) const { return fileData.at(idx); }
 
 ROM::ROM(const std::vector<uint8_t> & rd) : rawData(rd) { }
 
@@ -90,7 +92,7 @@ size_t ROM::bootstrapTOC(size_t firstEntry) {
     return fileList.size();
 }
 
-size_t ROM::numfiles() { return fileList.size(); }
+size_t ROM::numfiles() const { return fileList.size(); }
 
 ROMFile ROM::fileAt(size_t idx) {
     if (fcache.count(idx) == 0) {
@@ -106,15 +108,15 @@ ROMFile ROM::fileAt(size_t idx) {
     return fcache[idx];
 }
 
-ROMRecord ROM::fileidx(size_t idx) { return fileList.at(idx); }
+ROMRecord ROM::fileidx(size_t idx) const { return fileList.at(idx); }
 
-size_t ROM::size() { return rawData.size(); }
+size_t ROM::size() const { return rawData.size(); }
 
-std::string ROM::get_rname() {
+std::string ROM::get_rname() const {
     // lazy way to read until null byte
-    return std::string(reinterpret_cast<char*>(rawData.data()) + 0x20);
+    return std::string(reinterpret_cast<const char*>(rawData.data()) + 0x20);
 }
 
-std::string ROM::get_rcode() {
+std::string ROM::get_rcode() const {
     return std::string(rawData.begin() + 0x3B, rawData.begin() + 0x3F);
 }

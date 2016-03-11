@@ -18,10 +18,10 @@ struct ROMRecord {
     uint32_t pstart;
     uint32_t pend;
 
-    bool isCompressed();
-    bool isMissing();
-    size_t psize();
-    size_t vsize();
+    bool isCompressed() const;
+    bool isMissing() const;
+    size_t psize() const;
+    size_t vsize() const;
 };
 
 class ROMFile {
@@ -33,9 +33,11 @@ class ROMFile {
     ROMFile() = default;
     ROMFile(const std::vector<uint8_t> & fd, const ROMRecord & fa);
 
-    ROMRecord record();
+    ROMRecord record() const;
 
-    size_t size();
+    size_t size() const;
+
+    uint8_t at(size_t idx) const;
 };
 
 class ROM {
@@ -53,13 +55,13 @@ class ROM {
 
     size_t bootstrapTOC(size_t firstEntry);
 
-    size_t numfiles();
+    size_t numfiles() const;
     ROMFile fileAt(size_t idx);
 
-    ROMRecord fileidx(size_t idx);
+    ROMRecord fileidx(size_t idx) const;
 
-    size_t size();
+    size_t size() const;
 
-    std::string get_rname();
-    std::string get_rcode();
+    std::string get_rname() const;
+    std::string get_rcode() const;
 };
