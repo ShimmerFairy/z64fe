@@ -42,6 +42,54 @@ MainWindow::MainWindow() {
 
     rominfo->setLayout(rigrid);
 
+    figrid = new QGridLayout;
+
+    fplockey = new QLabel(tr("ROM Location:"));
+    fplocval = new QLabel;
+    fpsizekey = new QLabel(tr("Size in ROM:"));
+    fpsizeval = new QLabel;
+    fvlockey = new QLabel(tr("Virtual Location:"));
+    fvlocval = new QLabel;
+    fvsizekey = new QLabel(tr("Virtual Size:"));
+    fvsizeval = new QLabel;
+    fcmprkey = new QLabel(tr("Compressed?:"));
+    fcmprval = new QLabel;
+    femptykey = new QLabel(tr("Empty/Missing?:"));
+    femptyval = new QLabel;
+
+    hexviewbtn = new QPushButton(tr("&View Raw File"));
+    hexviewbtn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
+    figrid->addWidget(fplockey, 0, 0, Qt::AlignRight);
+    figrid->addWidget(fplocval, 0, 1, Qt::AlignLeft);
+
+    figrid->addWidget(makeGridLine(Qt::Vertical), 0, 2, 3, 1);
+
+    figrid->addWidget(fpsizekey, 0, 3, Qt::AlignRight);
+    figrid->addWidget(fpsizeval, 0, 4, Qt::AlignLeft);
+
+    figrid->addWidget(fvlockey, 2, 0, Qt::AlignRight);
+    figrid->addWidget(fvlocval, 2, 1, Qt::AlignLeft);
+
+    figrid->addWidget(fvsizekey, 2, 3, Qt::AlignRight);
+    figrid->addWidget(fvsizeval, 2, 4, Qt::AlignLeft);
+
+    figrid->addWidget(makeGridLine(Qt::Vertical), 0, 5, 3, 1);
+
+    figrid->addWidget(fcmprkey, 0, 6, Qt::AlignRight);
+    figrid->addWidget(fcmprval, 0, 7, Qt::AlignLeft);
+
+    figrid->addWidget(femptykey, 2, 6, Qt::AlignRight);
+    figrid->addWidget(femptyval, 2, 7, Qt::AlignLeft);
+
+    figrid->addWidget(makeGridLine(Qt::Horizontal), 1, 0, 1, 8);
+
+    figrid->addWidget(hexviewbtn, 3, 0, 2, 4);
+
+    figrid->setSpacing(10);
+
+    fileinfo->setLayout(figrid);
+
     qhb->addWidget(rominfo);
     qhb->addWidget(fileinfo);
 
@@ -208,10 +256,49 @@ void MainWindow::processROM(std::string fileName) {
         the_rom_model->endResetting();
     }
 
+    // connect table view's signal
+    connect(filesView->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::chooseFile);
+
     // now to set up ROM info labels
     rnameval->setText(the_rom.get_rname().c_str());
     rcodeval->setText(the_rom.get_rcode().c_str());
     rsizeval->setText(sizeToIEC(the_rom.size()).c_str());
 
     statusBar()->showMessage(tr("Found %1 files in the list.").arg(numfiles), 5000);
+}
+
+void MainWindow::chooseFile(const QModelIndex & cur, const QModelIndex & /*old*/) {
+    curfile = the_rom.fileAt(cur.row());
+
+    fplocval->setText(QString("0x%1").arg(
+                         QString("%1").arg(
+                             curfile.record().pstart, 8, 16, QChar('0'))
+                         .toUpper()));
+
+    fpsizeval->setText(sizeToIEC(curfile.record().psize()).c_str());
+
+    fvlocval->setText(QString("0x%1").arg(
+                         QString("%1").arg(
+                             curfile.record().vstart, 8, 16, QChar('0'))
+                         .toUpper()));
+
+    fvsizeval->setText(sizeToIEC(curfile.record().vsize()).c_str());
+
+    fcmprval->setText(curfile.record().isCompressed() ? "yes" : "no");
+
+    femptyval->setText((curfile.record().isMissing() || curfile.size() == 0) ? "yes" : "no");
+}
+
+QFrame * MainWindow::makeGridLine(Qt::Orientation orient) {
+    if (orient == Qt::Horizontal) {
+        QFrame * qline = new QFrame();
+        qline->setFrameShape(QFrame::HLine);
+        qline->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        return qline;
+    } else {
+        QFrame * qline = new QFrame();
+        qline->setFrameShape(QFrame::VLine);
+        qline->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+        return qline;
+    }
 }

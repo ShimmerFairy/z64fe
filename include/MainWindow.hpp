@@ -18,6 +18,8 @@
 #include <QAction>
 #include <QLabel>
 #include <QGridLayout>
+#include <QPushButton>
+#include <QFrame>
 
 #include <cstdint>
 #include <vector>
@@ -46,6 +48,21 @@ class MainWindow : public QMainWindow {
     QLabel * rsizekey;
     QLabel * rsizeval;
 
+    QGridLayout * figrid;
+    QLabel * fplockey;
+    QLabel * fplocval;
+    QLabel * fpsizekey;
+    QLabel * fpsizeval;
+    QLabel * fvlockey;
+    QLabel * fvlocval;
+    QLabel * fvsizekey;
+    QLabel * fvsizeval;
+    QLabel * fcmprkey;
+    QLabel * fcmprval;
+    QLabel * femptykey;
+    QLabel * femptyval;
+    QPushButton * hexviewbtn;
+
 
     QMenu * fileMenu;
     QAction * actOpen;
@@ -54,10 +71,16 @@ class MainWindow : public QMainWindow {
     ROM the_rom;
     ROMFileModel * the_rom_model;
 
+    ROMFile curfile;
+
     void processROM(std::string fileName);
+
+    QFrame * makeGridLine(Qt::Orientation orient);
 
   private slots:
     void openROM();
+
+    void chooseFile(const QModelIndex & cur, const QModelIndex & old);
 
   public:
     MainWindow();

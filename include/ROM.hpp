@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <map>
 #include <cstddef>
 #include <string>
 
@@ -23,10 +24,26 @@ struct ROMRecord {
     size_t vsize();
 };
 
+class ROMFile {
+  private:
+    std::vector<uint8_t> fileData;
+    ROMRecord foundAt;
+
+  public:
+    ROMFile() = default;
+    ROMFile(const std::vector<uint8_t> & fd, const ROMRecord & fa);
+
+    ROMRecord record();
+
+    size_t size();
+};
+
 class ROM {
   private:
     std::vector<uint8_t> rawData;
     std::vector<ROMRecord> fileList;
+
+    std::map<size_t, ROMFile> fcache;
 
   public:
     ROM() = default;
@@ -37,6 +54,8 @@ class ROM {
     size_t bootstrapTOC(size_t firstEntry);
 
     size_t numfiles();
+    ROMFile fileAt(size_t idx);
+
     ROMRecord fileidx(size_t idx);
 
     size_t size();

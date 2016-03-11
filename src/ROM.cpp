@@ -22,6 +22,12 @@ size_t ROMRecord::vsize() {
     return vend - vstart;
 }
 
+ROMFile::ROMFile(const std::vector<uint8_t> & fd, const ROMRecord & fa) : fileData(fd),
+                                                                          foundAt(fa) { }
+
+ROMRecord ROMFile::record() { return foundAt; }
+size_t ROMFile::size() { return fileData.size(); }
+
 ROM::ROM(const std::vector<uint8_t> & rd) : rawData(rd) { }
 
 void ROM::byteSwap() {
@@ -85,6 +91,21 @@ size_t ROM::bootstrapTOC(size_t firstEntry) {
 }
 
 size_t ROM::numfiles() { return fileList.size(); }
+
+ROMFile ROM::fileAt(size_t idx) {
+    if (fcache.count(idx) == 0) {
+        std::vector<uint8_t> nd;
+
+        std::copy(rawData.begin() + fileList.at(idx).pstart,
+                  rawData.begin() + fileList.at(idx).pstart + fileList.at(idx).psize(),
+                  std::back_inserter(nd));
+
+        fcache[idx] = ROMFile(nd, fileList.at(idx));
+    }
+
+    return fcache[idx];
+}
+
 ROMRecord ROM::fileidx(size_t idx) { return fileList.at(idx); }
 
 size_t ROM::size() { return rawData.size(); }
