@@ -305,25 +305,9 @@ QFrame * MainWindow::makeGridLine(Qt::Orientation orient) {
 }
 
 void MainWindow::openRawView() {
-    QTableView * newview = new QTableView;
-    HexFileModel * hfm = new HexFileModel(curfile, newview);
-
-    newview->setFont(QFont("monospace"));
-
-    newview->setModel(hfm);
-
-    newview->setAttribute(Qt::WA_DeleteOnClose);
-
-    newview->horizontalHeader()->setResizeContentsPrecision(1);
-    newview->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-    newview->verticalHeader()->setResizeContentsPrecision(1);
-    newview->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-
-    newview->resizeColumnsToContents();
-    newview->resizeRowsToContents();
+    HexViewer * newview = new HexViewer(curfile);
 
     connect(newview, &QTableView::destroyed, this, &MainWindow::rmWindow);
-
     childWindows.push_back(newview);
 
     newview->show();
