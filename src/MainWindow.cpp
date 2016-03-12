@@ -11,6 +11,7 @@
 #include <QMessageBox>
 #include <QStatusBar>
 #include <QHeaderView>
+#include <QSettings>
 
 #include <iostream>
 #include <fstream>
@@ -136,8 +137,12 @@ MainWindow::MainWindow() {
 }
 
 void MainWindow::openROM() {
-    QString fileName = QFileDialog::getOpenFileName(this);
+    QSettings qs;
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open ROM"),
+                                                    qs.value("main/lastfile", QString()).toString(),
+                                                    tr("N64 ROM Files (*.z64 *.n64);;All files (*)"));
     if (!fileName.isEmpty()) {
+        qs.setValue("main/lastfile", fileName);
         processROM(fileName.toStdString());
     }
 }
