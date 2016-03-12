@@ -61,6 +61,9 @@ MainWindow::MainWindow() {
     hexviewbtn = new QPushButton(tr("&View Raw File"));
     connect(hexviewbtn, &QPushButton::clicked, this, &MainWindow::openRawView);
 
+    decompviewbtn = new QPushButton(tr("&Decompress and View Raw"));
+    connect(decompviewbtn, &QPushButton::clicked, this, &MainWindow::decompAndOpen);
+
     figrid->addWidget(fplockey, 0, 0, Qt::AlignRight);
     figrid->addWidget(fplocval, 0, 1, Qt::AlignLeft);
 
@@ -85,7 +88,8 @@ MainWindow::MainWindow() {
 
     figrid->addWidget(makeGridLine(Qt::Horizontal), 1, 0, 1, 8);
 
-    figrid->addWidget(hexviewbtn, 3, 0, 2, 4);
+    figrid->addWidget(hexviewbtn, 3, 0, 1, 4);
+    figrid->addWidget(decompviewbtn, 3, 4, 1, 4);
 
     figrid->setSpacing(10);
 
@@ -306,6 +310,15 @@ QFrame * MainWindow::makeGridLine(Qt::Orientation orient) {
 
 void MainWindow::openRawView() {
     HexViewer * newview = new HexViewer(curfile);
+
+    connect(newview, &QTableView::destroyed, this, &MainWindow::rmWindow);
+    childWindows.push_back(newview);
+
+    newview->show();
+}
+
+void MainWindow::decompAndOpen() {
+    HexViewer * newview = new HexViewer(curfile.decompress());
 
     connect(newview, &QTableView::destroyed, this, &MainWindow::rmWindow);
     childWindows.push_back(newview);

@@ -28,6 +28,7 @@ class ROMFile {
   private:
     std::vector<uint8_t> fileData;
     ROMRecord foundAt;
+    bool decompressed = false; // used to avoid re-decomp attempts
 
   public:
     ROMFile() = default;
@@ -38,6 +39,8 @@ class ROMFile {
     size_t size() const;
 
     uint8_t at(size_t idx) const;
+
+    ROMFile decompress() const;
 };
 
 class ROM {

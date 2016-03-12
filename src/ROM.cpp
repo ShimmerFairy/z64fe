@@ -6,6 +6,7 @@
 
 #include "ROM.hpp"
 #include "endian.hpp"
+#include "yaz0.hpp"
 
 bool ROMRecord::isCompressed() const { return pend != 0 && !isMissing(); }
 bool ROMRecord::isMissing() const { return pstart == 0xFFFF'FFFF && pend == 0xFFFF'FFFF; }
@@ -29,6 +30,16 @@ ROMRecord ROMFile::record() const { return foundAt; }
 size_t ROMFile::size() const { return fileData.size(); }
 
 uint8_t ROMFile::at(size_t idx) const { return fileData.at(idx); }
+
+ROMFile ROMFile::decompress() const {
+    if (foundAt.isCompressed() && !decompressed) {
+        ROMFile res(yaz0_decompress(fileData), foundAt);
+        res.decompressed = true;
+        return res;
+    } else {
+        return *this;
+    }
+}
 
 ROM::ROM(const std::vector<uint8_t> & rd) : rawData(rd) { }
 

@@ -65,6 +65,7 @@ class MainWindow : public QMainWindow {
     QLabel * femptykey;
     QLabel * femptyval;
     QPushButton * hexviewbtn;
+    QPushButton * decompviewbtn;
 
 
     QMenu * fileMenu;
@@ -85,6 +86,7 @@ class MainWindow : public QMainWindow {
     void chooseFile(const QModelIndex & cur, const QModelIndex & old);
 
     void openRawView();
+    void decompAndOpen();
 
     void rmWindow(QObject * item);
 
