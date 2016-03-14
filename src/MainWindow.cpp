@@ -32,6 +32,10 @@ MainWindow::MainWindow() {
     rsizekey = new QLabel(tr("ROM Size:"));
     rsizeval = new QLabel;
 
+    savebs = new QPushButton(tr("No ROM loaded"));
+    savebs->setEnabled(false);
+    connect(savebs, &QPushButton::clicked, this, &MainWindow::saveROM);
+
     fileinfo = new QGroupBox(tr("File Info"));
     the_rom_model = nullptr;
 
@@ -41,6 +45,8 @@ MainWindow::MainWindow() {
     rigrid->addWidget(rcodeval, 1, 1, Qt::AlignLeft);
     rigrid->addWidget(rsizekey, 2, 0, Qt::AlignRight);
     rigrid->addWidget(rsizeval, 2, 1, Qt::AlignLeft);
+
+    rigrid->addWidget(savebs, 3, 0, 1, 2);
 
     rominfo->setLayout(rigrid);
 
@@ -99,6 +105,7 @@ MainWindow::MainWindow() {
     fileinfo->setLayout(figrid);
 
     qhb->addWidget(rominfo);
+    qhb->addStretch();
     qhb->addWidget(fileinfo);
 
     qvb->addWidget(filesView);
@@ -146,6 +153,38 @@ void MainWindow::openROM() {
     if (!fileName.isEmpty()) {
         qs.setValue("main/lastfile", fileName);
         processROM(fileName.toStdString());
+    }
+}
+
+void MainWindow::saveROM() {
+    QSettings qs;
+    QString defName = qs.value("main/lastfile", QString()).toString();
+
+    if (defName != QString()) {
+        defName += ".swapped";
+    }
+
+    QString saveTo = QFileDialog::getSaveFileName(this, tr("Save ROM"),
+                                                  defName,
+                                                  tr("N64 ROM Files (*.z64 *.n64);;All files (*)"));
+
+    std::string savname = saveTo.toStdString();
+
+    std::ofstream ofile(savname, std::ios_base::binary);
+
+    if (!ofile) {
+        QMessageBox::critical(this, "Z64Fe",
+                              tr("Can't open %1 for saving. Not saving.").arg(savname.c_str()));
+        return;
+    }
+
+    std::vector<uint8_t> romdata = the_rom.getData();
+
+    ofile.write(reinterpret_cast<char*>(romdata.data()), romdata.size());
+
+    if (!ofile) {
+        QMessageBox::warning(this, "Z64Fe",
+                             tr("Error occurred while writing file. Written ROM may not be complete."));
     }
 }
 
@@ -272,6 +311,14 @@ void MainWindow::processROM(std::string fileName) {
     connect(filesView->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::chooseFile);
 
     hexviewbtn->setEnabled(true);
+
+    if (isflipped) {
+        savebs->setText(tr("&Save Byteswapped ROM"));
+        savebs->setEnabled(true);
+    } else {
+        savebs->setText(tr("Not Initially Byteswapped"));
+        savebs->setEnabled(false);
+    }
 
     // now to set up ROM info labels
     rnameval->setText(the_rom.get_rname().c_str());

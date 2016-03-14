@@ -67,4 +67,6 @@ class ROM {
 
     std::string get_rname() const;
     std::string get_rcode() const;
+
+    std::vector<uint8_t> getData() const;
 };

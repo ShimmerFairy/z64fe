@@ -50,6 +50,7 @@ class MainWindow : public QMainWindow {
     QLabel * rcodeval;
     QLabel * rsizekey;
     QLabel * rsizeval;
+    QPushButton * savebs;
 
     QGridLayout * figrid;
     QLabel * fplockey;
@@ -82,6 +83,7 @@ class MainWindow : public QMainWindow {
     QFrame * makeGridLine(Qt::Orientation orient);
   private slots:
     void openROM();
+    void saveROM();
 
     void chooseFile(const QModelIndex & cur, const QModelIndex & old);
 

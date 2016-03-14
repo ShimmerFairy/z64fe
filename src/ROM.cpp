@@ -131,3 +131,5 @@ std::string ROM::get_rname() const {
 std::string ROM::get_rcode() const {
     return std::string(rawData.begin() + 0x3B, rawData.begin() + 0x3F);
 }
+
+std::vector<uint8_t> ROM::getData() const { return rawData; }
