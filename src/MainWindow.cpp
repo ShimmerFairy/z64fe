@@ -60,9 +60,11 @@ MainWindow::MainWindow() {
     femptyval = new QLabel;
 
     hexviewbtn = new QPushButton(tr("&View Raw File"));
+    hexviewbtn->setEnabled(false);
     connect(hexviewbtn, &QPushButton::clicked, this, &MainWindow::openRawView);
 
     decompviewbtn = new QPushButton(tr("&Decompress and View Raw"));
+    decompviewbtn->setEnabled(false);
     connect(decompviewbtn, &QPushButton::clicked, this, &MainWindow::decompAndOpen);
 
     figrid->addWidget(fplockey, 0, 0, Qt::AlignRight);
@@ -269,6 +271,8 @@ void MainWindow::processROM(std::string fileName) {
     // connect table view's signal
     connect(filesView->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::chooseFile);
 
+    hexviewbtn->setEnabled(true);
+
     // now to set up ROM info labels
     rnameval->setText(the_rom.get_rname().c_str());
     rcodeval->setText(the_rom.get_rcode().c_str());
@@ -297,6 +301,12 @@ void MainWindow::chooseFile(const QModelIndex & cur, const QModelIndex & /*old*/
     fcmprval->setText(curfile.record().isCompressed() ? "yes" : "no");
 
     femptyval->setText((curfile.record().isMissing() || curfile.size() == 0) ? "yes" : "no");
+
+    if (curfile.record().isCompressed()) {
+        decompviewbtn->setEnabled(true);
+    } else {
+        decompviewbtn->setEnabled(false);
+    }
 }
 
 QFrame * MainWindow::makeGridLine(Qt::Orientation orient) {
