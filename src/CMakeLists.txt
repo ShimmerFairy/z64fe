@@ -4,5 +4,6 @@ add_executable(z64fe main.cpp
                      ROMFileModel.cpp ${CMAKE_SOURCE_DIR}/include/ROMFileModel.hpp
                      utility.cpp
                      HexViewer.cpp ${CMAKE_SOURCE_DIR}/include/HexViewer.hpp
-                     yaz0.cpp)
+                     yaz0.cpp
+                     TextViewer.cpp ${CMAKE_SOURCE_DIR}/include/TextViewer.hpp)
 target_link_libraries(z64fe Qt5::Widgets)

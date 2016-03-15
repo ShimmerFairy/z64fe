@@ -6,6 +6,8 @@
 
 #include "MainWindow.hpp"
 #include "utility.hpp"
+#include "HexViewer.hpp"
+#include "TextViewer.hpp"
 
 #include <QFileDialog>
 #include <QMessageBox>
@@ -73,6 +75,10 @@ MainWindow::MainWindow() {
     decompviewbtn->setEnabled(false);
     connect(decompviewbtn, &QPushButton::clicked, this, &MainWindow::decompAndOpen);
 
+    txtview = new QPushButton(tr("&Text View"));
+    txtview->setEnabled(false);
+    connect(txtview, &QPushButton::clicked, this, &MainWindow::textView);
+
     figrid->addWidget(fplockey, 0, 0, Qt::AlignRight);
     figrid->addWidget(fplocval, 0, 1, Qt::AlignLeft);
 
@@ -99,6 +105,8 @@ MainWindow::MainWindow() {
 
     figrid->addWidget(hexviewbtn, 3, 0, 1, 4);
     figrid->addWidget(decompviewbtn, 3, 4, 1, 4);
+
+    figrid->addWidget(txtview, 4, 0, 1, 8);
 
     figrid->setSpacing(10);
 
@@ -316,6 +324,7 @@ void MainWindow::processROM(std::string fileName) {
     connect(filesView->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::chooseFile);
 
     hexviewbtn->setEnabled(true);
+    txtview->setEnabled(true);
 
     if (isflipped) {
         savebs->setText(tr("&Save Byteswapped ROM"));
@@ -386,6 +395,15 @@ void MainWindow::openRawView() {
 
 void MainWindow::decompAndOpen() {
     HexViewer * newview = new HexViewer(curfile.decompress());
+
+    connect(newview, &QTableView::destroyed, this, &MainWindow::rmWindow);
+    childWindows.push_back(newview);
+
+    newview->show();
+}
+
+void MainWindow::textView() {
+    TextViewer * newview = new TextViewer(curfile);
 
     connect(newview, &QTableView::destroyed, this, &MainWindow::rmWindow);
     childWindows.push_back(newview);

@@ -8,7 +8,6 @@
 
 #include "ROM.hpp"
 #include "ROMFileModel.hpp"
-#include "HexViewer.hpp"
 
 #include <QMainWindow>
 #include <QTableView>
@@ -69,6 +68,8 @@ class MainWindow : public QMainWindow {
     QPushButton * hexviewbtn;
     QPushButton * decompviewbtn;
 
+    QPushButton * txtview;
+
 
     QMenu * fileMenu;
     QAction * actOpen;
@@ -92,6 +93,8 @@ class MainWindow : public QMainWindow {
 
     void openRawView();
     void decompAndOpen();
+
+    void textView();
 
     void rmWindow(QObject * item);
 
