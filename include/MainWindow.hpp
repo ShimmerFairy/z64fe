@@ -21,6 +21,7 @@
 #include <QGridLayout>
 #include <QPushButton>
 #include <QFrame>
+#include <QToolBar>
 
 #include <cstdint>
 #include <vector>
@@ -72,6 +73,8 @@ class MainWindow : public QMainWindow {
     QMenu * fileMenu;
     QAction * actOpen;
     QAction * actQuit;
+
+    QToolBar * actBar;
 
     ROM the_rom;
     ROMFileModel * the_rom_model;

@@ -143,6 +143,11 @@ MainWindow::MainWindow() {
     fileMenu->addAction(actOpen);
     fileMenu->addSeparator();
     fileMenu->addAction(actQuit);
+
+    actBar = addToolBar("Actions");
+    actBar->addAction(actOpen);
+    actBar->addSeparator();
+    actBar->addAction(actQuit);
 }
 
 void MainWindow::openROM() {
