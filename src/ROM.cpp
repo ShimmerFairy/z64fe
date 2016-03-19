@@ -7,6 +7,7 @@
 #include "ROM.hpp"
 #include "endian.hpp"
 #include "yaz0.hpp"
+#include "Exceptions.hpp"
 
 #include <QString>
 
@@ -80,15 +81,15 @@ namespace ROM {
         }
 
         if (tocrec.pstart != firstEntry) {
-            throw "OH NO NO ENTRY;";
+            throw X::BadROM("Didn't find the Table of Contents in its own list, which may indicate a problem.");
         }
 
         if (tocrec.isCompressed()) {
-            throw "COMPRESSED TOC NYI";
+            throw X::BadROM("The table of contents is claiming to be compressed, despite us finding its own entry in itself, suggesting it's NOT compressed. Due to this contradiction, we won't handle this ROM.");
         }
 
         if (tocrec.isMissing()) {
-            throw "TOC MISSING?";
+            throw X::BadROM("The table of contents appears to be 'missing' in its own list, despite being present enough for us to find it. This contradiction probably isn't the only one, and in any case must be fixed before we'll touch it.");
         }
 
         std::vector<uint8_t> tocList;
@@ -148,12 +149,12 @@ namespace ROM {
             return fileAt(std::distance(fileList.begin(), rightFile));
         }
 
-        throw "Invalid address";
+        throw X::BadIndex("virtual address, not matching any files' starting positions");
     }
 
     File ROM::fileAtName(std::string name) {
         if (ctree.isEmpty()) {
-            throw "Ach, no files to read!";
+            throw X::NoConfig("Finding files by name");
         }
 
         return fileAtVAddr(std::stoul(ctree.getValue({"fileList", name}), nullptr, 0));
@@ -185,14 +186,14 @@ namespace ROM {
         size_t after_atpart = compileString.find_first_of('\0');
 
         if (after_atpart == std::string::npos) {
-            throw "Somehow didn't find null in string!";
+            throw X::BadROM("Somehow didn't find null in string!");
         }
 
         // now to find the first non-null after that, which'll be the timestamp
         size_t after_nulls = compileString.find_first_not_of('\0', after_atpart);
 
         if (after_nulls == std::string::npos) {
-            throw "Somehow didn't find timestamp!";
+            throw X::BadROM("Somehow didn't find timestamp! We need this to determine the cartridge version, and your ROM appears to not have it, which may indicate a badly(?) hacked ROM.");
         }
 
         // and finally, set the compile string to just the timestamp (we do it this

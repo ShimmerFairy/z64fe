@@ -5,6 +5,7 @@
  */
 
 #include "ConfigTree.hpp"
+#include "Exceptions.hpp"
 
 #include <QString>
 #include <QStandardPaths>
@@ -136,14 +137,19 @@ ConfigTree::ConfigTree(std::ifstream & infile) {
 
         if (linestream.peek() == '}') {
             if (nodestack.size() < 2) {
-                throw "Unexpected closing brace.";
+                throw X::Config::SyntaxError("Unexpected closing brace");
             }
 
             // now to make sure there isn't garbage after the close brace
             while (linestream) {
                 if (linestream.peek() != '#' && !std::isspace(linestream.peek())) {
-                    throw "Garbage after closing brace";
+                    throw X::Config::SyntaxError("Garbage after closing brace");
+                } else if (linestream.peek() == '#') {
+                    // make sure that we stop when a comment happens, so we
+                    // don't pick up the comment itself as garbage
+                    break;
                 }
+
                 linestream.get();
             }
 
@@ -180,12 +186,12 @@ ConfigTree::ConfigTree(std::ifstream & infile) {
             // we use an empty value internally to indicate a group; besides, an
             // empty value shouldn't be useful in the first place.
             if (aval == "") {
-                throw "Empty value not allowed!";
+                throw X::Config::SyntaxError("Empty value not allowed!");
             }
 
             nodestack.back()->addChild(new ConfigTreeNode(akey, aval));
         } else {
-            throw "Unrec. char";
+            throw X::Config::BadCharacter(linestream.peek());
         }
     }
 
@@ -232,7 +238,7 @@ std::string ConfigTree::getValue(std::string toplvl) const {
     ConfigTreeNode * respair = rootNode->childMatchKey(toplvl);
 
     if (respair == nullptr) {
-        throw "Sorry, no dice.";
+        throw X::Config::NoSuchKey(toplvl, true);
     }
 
     return respair->value();
@@ -245,7 +251,7 @@ std::string ConfigTree::getValue(std::initializer_list<std::string> vp) const {
         cur_res = cur_res->childMatchKey(i);
 
         if (cur_res == nullptr) {
-            throw "Sorry, no dice.";
+            throw X::Config::NoSuchKey(i);
         }
     }
 
@@ -259,14 +265,14 @@ std::string ConfigTree::findKey(std::initializer_list<std::string> ingroup, std:
         cur_res = cur_res->childMatchKey(i);
 
         if (cur_res == nullptr) {
-            throw "Sorry, no dice.";
+            throw X::Config::NoSuchKey(i);
         }
     }
 
     cur_res = cur_res->childMatchValue(findval);
 
     if (cur_res == nullptr) {
-        throw "Sorry, no dice.";
+        throw X::Config::NoSuchValue(findval);
     }
 
     return cur_res->key();

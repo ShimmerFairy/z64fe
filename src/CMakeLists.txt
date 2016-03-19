@@ -7,6 +7,7 @@ add_executable(z64fe main.cpp
                      yaz0.cpp
                      Config.cpp
                      MainWindow_GUI.cpp
-                     ConfigTree.cpp)
+                     ConfigTree.cpp
+                     Exceptions.cpp)
 #                     TextViewer.cpp ${CMAKE_SOURCE_DIR}/include/TextViewer.hpp)
 target_link_libraries(z64fe Qt5::Widgets)

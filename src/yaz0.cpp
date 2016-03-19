@@ -6,6 +6,7 @@
 
 #include "yaz0.hpp"
 #include "endian.hpp"
+#include "Exceptions.hpp"
 
 #include <string>
 #include <iostream>
@@ -14,7 +15,7 @@ std::vector<uint8_t> yaz0_decompress(std::vector<uint8_t> ciphertext) {
     std::string magic(ciphertext.begin(), ciphertext.begin() + 4);
 
     if (magic != "Yaz0" && magic != "Yaz1") {
-        throw "Not actually a compressed file.";
+        throw X::Yaz0::Decompress("Not actually a compressed file.");
     }
 
     // we don't really need to use the size param, since we're using vectors,
@@ -34,7 +35,8 @@ std::vector<uint8_t> yaz0_decompress(std::vector<uint8_t> ciphertext) {
         uint8_t opset = *cipher_R_pnt++;
 
         // the weird choice for comparison is because an unsigned int see 0 - 1
-        // as a positive number, of course, so the standard 0 <= i is useless.
+        // == -1 as a positive number, of course, so the standard 0 <= i is
+        // useless.
         for (uint8_t i = 7; i <= 7; i--) {
             // each iteration, if we're now at the end of the cipher stream (or
             // write buffer), we'll just stop; it's permissible (AFAIK) to not
@@ -82,7 +84,7 @@ std::vector<uint8_t> yaz0_decompress(std::vector<uint8_t> ciphertext) {
     }
 
     if (plain_W_pnt != plaintext.end()) {
-        throw "Some kind of problem with decompressing, didn't fill up plaintext exactly.";
+        throw X::Yaz0::Decompress("Some kind of problem with decompressing, didn't fill up plaintext exactly.");
     }
 
     return plaintext;
