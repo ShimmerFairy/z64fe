@@ -8,6 +8,7 @@
 
 #include "ROM.hpp"
 #include "ROMFileModel.hpp"
+#include "Config.hpp"
 
 #include <QMainWindow>
 #include <QTableView>
@@ -50,6 +51,8 @@ class MainWindow : public QMainWindow {
     QLabel * rcodeval;
     QLabel * rsizekey;
     QLabel * rsizeval;
+    QLabel * rversionkey;
+    QLabel * rversionval;
     QPushButton * savebs;
 
     QGridLayout * figrid;
@@ -70,22 +73,30 @@ class MainWindow : public QMainWindow {
 
     QPushButton * txtview;
 
-
     QMenu * fileMenu;
     QAction * actOpen;
     QAction * actQuit;
 
     QToolBar * actBar;
 
-    ROM the_rom;
+    ROM::ROM the_rom;
+
     ROMFileModel * the_rom_model;
 
-    ROMFile curfile;
+    ROM::File curfile;
 
     void processROM(std::string fileName);
 
     QFrame * makeGridLine(Qt::Orientation orient);
-  private slots:
+
+    // function to handle separate parts of the GUI, implemented in separate
+    // file
+    void guiMakeMenu();
+    void guiMakeLister();
+    void guiMakeROMInfo();
+    void guiMakeFileInfo();
+    void guiAssembleWindow();
+//  private slots:
     void openROM();
     void saveROM();
 

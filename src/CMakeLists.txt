@@ -5,5 +5,8 @@ add_executable(z64fe main.cpp
                      utility.cpp
                      HexViewer.cpp ${CMAKE_SOURCE_DIR}/include/HexViewer.hpp
                      yaz0.cpp
-                     TextViewer.cpp ${CMAKE_SOURCE_DIR}/include/TextViewer.hpp)
+                     Config.cpp
+                     MainWindow_GUI.cpp
+                     ConfigTree.cpp)
+#                     TextViewer.cpp ${CMAKE_SOURCE_DIR}/include/TextViewer.hpp)
 target_link_libraries(z64fe Qt5::Widgets)

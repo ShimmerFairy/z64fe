@@ -23,10 +23,10 @@
 
 class HexFileModel : public QAbstractTableModel {
   protected:
-    ROMFile myfile;
+    ROM::File myfile;
 
   public:
-    HexFileModel(ROMFile mf);
+    HexFileModel(ROM::File mf);
 
     int rowCount(const QModelIndex & parent = QModelIndex()) const override;
     int columnCount(const QModelIndex & parent = QModelIndex()) const override;
@@ -105,7 +105,7 @@ class HexFileTextModel : public HexFileModel {
         { 0x9F, "APC"  }};
 
   public:
-    HexFileTextModel(ROMFile mf);
+    HexFileTextModel(ROM::File mf);
 
     QVariant data(const QModelIndex & idx, int role = Qt::DisplayRole) const override;
 };
@@ -128,7 +128,7 @@ class HexViewer : public QMainWindow {
     void doOptions();
 
   public:
-    HexViewer(ROMFile mf);
+    HexViewer(ROM::File mf);
 };
 
 class HexViewOpts : public QDialog {

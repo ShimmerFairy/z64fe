@@ -14,148 +14,14 @@
 #include <QStatusBar>
 #include <QHeaderView>
 #include <QSettings>
+#include <QProgressDialog>
 
 #include <iostream>
 #include <fstream>
 #include <algorithm>
 
 MainWindow::MainWindow() {
-    dummy = new QWidget;
-    qvb = new QVBoxLayout;
-    filesView = new QTableView;
-    qhb = new QHBoxLayout;
-    rominfo = new QGroupBox(tr("ROM Info"));
-    rigrid = new QGridLayout;
-
-    rnamekey = new QLabel(tr("ROM Name:"));
-    rnameval = new QLabel;
-    rcodekey = new QLabel(tr("ROM Code:"));
-    rcodeval = new QLabel;
-    rsizekey = new QLabel(tr("ROM Size:"));
-    rsizeval = new QLabel;
-
-    savebs = new QPushButton(tr("No ROM loaded"));
-    savebs->setEnabled(false);
-    connect(savebs, &QPushButton::clicked, this, &MainWindow::saveROM);
-
-    fileinfo = new QGroupBox(tr("File Info"));
-    the_rom_model = nullptr;
-
-    rigrid->addWidget(rnamekey, 0, 0, Qt::AlignRight);
-    rigrid->addWidget(rnameval, 0, 1, Qt::AlignLeft);
-    rigrid->addWidget(rcodekey, 1, 0, Qt::AlignRight);
-    rigrid->addWidget(rcodeval, 1, 1, Qt::AlignLeft);
-    rigrid->addWidget(rsizekey, 2, 0, Qt::AlignRight);
-    rigrid->addWidget(rsizeval, 2, 1, Qt::AlignLeft);
-
-    rigrid->addWidget(savebs, 3, 0, 1, 2);
-
-    rominfo->setLayout(rigrid);
-
-    figrid = new QGridLayout;
-
-    fplockey = new QLabel(tr("ROM Location:"));
-    fplocval = new QLabel;
-    fpsizekey = new QLabel(tr("Size in ROM:"));
-    fpsizeval = new QLabel;
-    fvlockey = new QLabel(tr("Virtual Location:"));
-    fvlocval = new QLabel;
-    fvsizekey = new QLabel(tr("Virtual Size:"));
-    fvsizeval = new QLabel;
-    fcmprkey = new QLabel(tr("Compressed?:"));
-    fcmprval = new QLabel;
-    femptykey = new QLabel(tr("Empty/Missing?:"));
-    femptyval = new QLabel;
-
-    hexviewbtn = new QPushButton(tr("&View Raw File"));
-    hexviewbtn->setEnabled(false);
-    connect(hexviewbtn, &QPushButton::clicked, this, &MainWindow::openRawView);
-
-    decompviewbtn = new QPushButton(tr("&Decompress and View Raw"));
-    decompviewbtn->setEnabled(false);
-    connect(decompviewbtn, &QPushButton::clicked, this, &MainWindow::decompAndOpen);
-
-    txtview = new QPushButton(tr("&Text View"));
-    txtview->setEnabled(false);
-    connect(txtview, &QPushButton::clicked, this, &MainWindow::textView);
-
-    figrid->addWidget(fplockey, 0, 0, Qt::AlignRight);
-    figrid->addWidget(fplocval, 0, 1, Qt::AlignLeft);
-
-    figrid->addWidget(makeGridLine(Qt::Vertical), 0, 2, 3, 1);
-
-    figrid->addWidget(fpsizekey, 0, 3, Qt::AlignRight);
-    figrid->addWidget(fpsizeval, 0, 4, Qt::AlignLeft);
-
-    figrid->addWidget(fvlockey, 2, 0, Qt::AlignRight);
-    figrid->addWidget(fvlocval, 2, 1, Qt::AlignLeft);
-
-    figrid->addWidget(fvsizekey, 2, 3, Qt::AlignRight);
-    figrid->addWidget(fvsizeval, 2, 4, Qt::AlignLeft);
-
-    figrid->addWidget(makeGridLine(Qt::Vertical), 0, 5, 3, 1);
-
-    figrid->addWidget(fcmprkey, 0, 6, Qt::AlignRight);
-    figrid->addWidget(fcmprval, 0, 7, Qt::AlignLeft);
-
-    figrid->addWidget(femptykey, 2, 6, Qt::AlignRight);
-    figrid->addWidget(femptyval, 2, 7, Qt::AlignLeft);
-
-    figrid->addWidget(makeGridLine(Qt::Horizontal), 1, 0, 1, 8);
-
-    figrid->addWidget(hexviewbtn, 3, 0, 1, 4);
-    figrid->addWidget(decompviewbtn, 3, 4, 1, 4);
-
-    figrid->addWidget(txtview, 4, 0, 1, 8);
-
-    figrid->setSpacing(10);
-
-    fileinfo->setLayout(figrid);
-
-    qhb->addWidget(rominfo);
-    qhb->addStretch();
-    qhb->addWidget(fileinfo);
-
-    qvb->addWidget(filesView);
-    qvb->addLayout(qhb);
-
-    dummy->setLayout(qvb);
-
-    setCentralWidget(dummy);
-    setWindowTitle(tr("File Viewer"));
-
-    // make window create status bar
-    statusBar();
-
-    // set up menus and such
-    fileMenu = menuBar()->addMenu(tr("&File"));
-
-
-    // The freedesktop icon name standard is a perfectly good one, and Qt has
-    // continually passed up the opportunity to make it or something else usable
-    // as a platform-neutral way to specify typical icons, so failures of this
-    // choice on the part of Windows or OSX will be automatically WONTFIX on our
-    // end.
-    actOpen = new QAction(QIcon::fromTheme("document-open"), tr("&Open ROM..."), this);
-    actOpen->setShortcuts(QKeySequence::Open);
-    actOpen->setStatusTip(tr("Open an Ocarina of Time or Majora's Mask ROM."));
-
-    connect(actOpen, &QAction::triggered, this, &MainWindow::openROM);
-
-    actQuit = new QAction(QIcon::fromTheme("application-exit"), tr("&Quit"), this);
-    actQuit->setShortcuts(QKeySequence::Quit);
-    actQuit->setStatusTip(tr("Exit this program."));
-
-    connect(actQuit, &QAction::triggered, this, &MainWindow::close);
-
-    fileMenu->addAction(actOpen);
-    fileMenu->addSeparator();
-    fileMenu->addAction(actQuit);
-
-    actBar = addToolBar("Actions");
-    actBar->addAction(actOpen);
-    actBar->addSeparator();
-    actBar->addAction(actQuit);
+    guiAssembleWindow();
 }
 
 void MainWindow::openROM() {
@@ -202,30 +68,25 @@ void MainWindow::saveROM() {
 }
 
 void MainWindow::processROM(std::string fileName) {
-    std::ifstream file;
+    std::ifstream file(fileName, std::ios_base::binary | std::ios_base::ate);
 
-    // this is so we (hopefully) get an explanation from std on why a file fails
-    // to open
-    file.exceptions(std::ifstream::failbit);
-
-    try {
-        file.open(fileName, std::ios_base::binary | std::ios_base::ate);
-    } catch (std::exception & e) {
+    if (!file) {
         QMessageBox::critical(this, "Z64Fe",
-                              tr("Can't open file %1:\n%2.").arg(fileName.c_str()).arg(e.what()));
+                              tr("Can't open file %1").arg(fileName.c_str()));
         return;
     }
-
-    file.exceptions(std::ifstream::goodbit); // and now we're done with that
 
     size_t fsize = file.tellg();
     file.seekg(0);
 
+    QProgressDialog progbox("Seeking magic word...", "Cancel", 0, fsize * 4, this);
+    progbox.setWindowModality(Qt::WindowModal);
+
+    progbox.setValue(0);
+
     // now we need to find the magic word, "zelda@" (or "ezdl@a" for byteswapped
     // roms). Hopefully someday we'll be able to intuit how the N64 handles a
     // ROM.
-
-    statusBar()->showMessage(tr("Seeking magic word..."));
 
     // we do this search by looking for a 'z', and once we find it an 'e', 'l',
     // etc. if it fails at any point, we start the search again with the
@@ -272,15 +133,16 @@ void MainWindow::processROM(std::string fileName) {
         }
     }
 
-    statusBar()->clearMessage();
+    progbox.setValue(fsize);
 
     if (foundPos == rom_npos) {
+        progbox.cancel();
         QMessageBox::critical(this, tr("Error in reading ROM"),
                               tr("Could not find magic word; are you sure this a Z64 ROM?"));
         return;
     }
 
-    statusBar()->showMessage(tr("Found magic word at 0x%1").arg(foundPos, 0, 16));
+    progbox.setLabelText(tr("Copying ROM to memory..."));
 
     file.seekg(0);
 
@@ -289,6 +151,10 @@ void MainWindow::processROM(std::string fileName) {
 
     for (size_t i = 0; i < fsize; i++) {
         raws.push_back(file.get());
+
+        if (i != 0 && i % 0x1000 == 0) {
+            progbox.setValue(progbox.value() + 0x1000);
+        }
     }
 
     // if we have an existing model, start the reset operation
@@ -296,18 +162,22 @@ void MainWindow::processROM(std::string fileName) {
         the_rom_model->startResetting();
     }
 
-    the_rom = ROM(raws);
+    the_rom = ROM::ROM(raws);
 
     if (isflipped) {
-        statusBar()->showMessage(tr("Byteswapping ROM..."));
+        progbox.setLabelText(tr("Byteswapping ROM..."));
         the_rom.byteSwap();
     }
 
-    statusBar()->showMessage(tr("Assembling list of files..."));
+    progbox.setValue(progbox.value() + fsize);
+
+    progbox.setLabelText(tr("Assembling list of files..."));
 
     size_t numfiles;
 
     numfiles = the_rom.bootstrapTOC(foundPos + 0x30);
+
+    progbox.setValue(progbox.value() + fsize);
 
     // if we haven't loaded a ROM before, set up everything we need
     if (the_rom_model == nullptr) {
@@ -324,7 +194,6 @@ void MainWindow::processROM(std::string fileName) {
     connect(filesView->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::chooseFile);
 
     hexviewbtn->setEnabled(true);
-    txtview->setEnabled(true);
 
     if (isflipped) {
         savebs->setText(tr("&Save Byteswapped ROM"));
@@ -338,6 +207,7 @@ void MainWindow::processROM(std::string fileName) {
     rnameval->setText(the_rom.get_rname().c_str());
     rcodeval->setText(the_rom.get_rcode().c_str());
     rsizeval->setText(sizeToIEC(the_rom.size()).c_str());
+    rversionval->setText(Config::vDisplayStr(the_rom.getVersion()).c_str());
 
     statusBar()->showMessage(tr("Found %1 files in the list.").arg(numfiles), 5000);
 }
@@ -403,12 +273,12 @@ void MainWindow::decompAndOpen() {
 }
 
 void MainWindow::textView() {
-    TextViewer * newview = new TextViewer(curfile);
+/*    TextViewer * newview = new TextViewer(curfile);
 
     connect(newview, &QTableView::destroyed, this, &MainWindow::rmWindow);
     childWindows.push_back(newview);
 
-    newview->show();
+    newview->show();*/
 }
 
 void MainWindow::rmWindow(QObject * item) {

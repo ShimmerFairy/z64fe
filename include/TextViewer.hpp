@@ -7,30 +7,33 @@
 #pragma once
 
 #include "ROM.hpp"
+#include "Config.hpp"
+#include "TextIDModel.hpp"
 
 #include <QMainWindow>
-#include <QPushButton>
+#include <QTreeView>
 #include <QTextEdit>
 #include <QHBoxLayout>
-#include <QVBoxLayout>
+
+#include <map>
 
 class TextViewer : public QMainWindow {
-  private:
-    QTextEdit * viewer;
-    QPushButton * asciibtn;
-    QPushButton * sjisbtn;
+    Q_OBJECT
 
+  private:
+    ROM::ROM trom;
+
+    QTreeView * idlist;
+    TextIDModel * idmod;
+
+    QTextEdit * msgview;
     QHBoxLayout * qhb;
-    QVBoxLayout * qvb;
 
     QWidget * dummy;
 
-    ROMFile tdata;
-
   private slots:
-    void transASCII();
-    void transShiftJIS();
+    void chooseText(const QItemSelection & sel, const QItemSelection & desel);
 
   public:
-    TextViewer(ROMFile td);
+    TextViewer(ROM::ROM r);
 };

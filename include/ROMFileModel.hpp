@@ -15,10 +15,10 @@ class ROMFileModel : public QAbstractTableModel {
     Q_OBJECT
 
   private:
-    ROM * data_src;
+    ROM::ROM * data_src;
 
   public:
-    ROMFileModel(ROM * ds);
+    ROMFileModel(ROM::ROM * ds);
 
     int rowCount(const QModelIndex & parent = QModelIndex()) const override;
     int columnCount(const QModelIndex & parent = QModelIndex()) const override;

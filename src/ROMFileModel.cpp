@@ -9,7 +9,7 @@
 
 #include <QBrush>
 
-ROMFileModel::ROMFileModel(ROM * ds) : data_src(ds) { }
+ROMFileModel::ROMFileModel(ROM::ROM * ds) : data_src(ds) { }
 
 int ROMFileModel::rowCount(const QModelIndex & /*parent*/) const {
     return data_src->numfiles();
@@ -30,27 +30,27 @@ QVariant ROMFileModel::data(const QModelIndex & index, int role) const {
     if (role == Qt::DisplayRole) {
         switch (index.column()) {
           case 0:
-            return QString("0x%1").arg(QString("%1").arg(data_src->fileidx(index.row()).pstart, 0, 16).toUpper());
+            return QString("0x%1").arg(QString("%1").arg(data_src->recordAt(index.row()).pstart, 0, 16).toUpper());
             break;
 
           case 1:
-            return QString(sizeToIEC(data_src->fileidx(index.row()).psize()).c_str());
+            return QString(sizeToIEC(data_src->recordAt(index.row()).psize()).c_str());
             break;
 
           case 2:
-            return QString("0x%1").arg(QString("%1").arg(data_src->fileidx(index.row()).vstart, 0, 16).toUpper());
+            return QString("0x%1").arg(QString("%1").arg(data_src->recordAt(index.row()).vstart, 0, 16).toUpper());
             break;
 
           case 3:
-            return QString(sizeToIEC(data_src->fileidx(index.row()).vsize()).c_str());
+            return QString(sizeToIEC(data_src->recordAt(index.row()).vsize()).c_str());
             break;
         }
 
         return "ERROR!";
     } else if (role == Qt::BackgroundRole) {
-        if (data_src->fileidx(index.row()).isCompressed()) {
+        if (data_src->recordAt(index.row()).isCompressed()) {
             return QBrush(Qt::cyan);
-        } else if (data_src->fileidx(index.row()).isMissing()) {
+        } else if (data_src->recordAt(index.row()).isMissing()) {
             return QBrush(Qt::darkGray);
         }
     }

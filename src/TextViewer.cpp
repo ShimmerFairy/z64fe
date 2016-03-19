@@ -5,34 +5,79 @@
  */
 
 #include "TextViewer.hpp"
+#include "endian.hpp"
 
-#include <map>
 #include <QString>
+#include <QMessageBox>
 
-TextViewer::TextViewer(ROMFile td) : tdata(td) {
-    viewer = new QTextEdit;
-    viewer->setReadOnly(true);
-    asciibtn = new QPushButton(tr("&ASCII"));
-    sjisbtn = new QPushButton(tr("&Shift-JIS"));
-
+TextViewer::TextViewer(ROM::ROM r) : trom(r) {
+    idlist = new QTreeView;
+    idmod = new TextIDModel(trom.getFileNamed(Config::File::code), trom.getVersion());
+    msgview = new QTextEdit;
     qhb = new QHBoxLayout;
-
-    qhb->addWidget(asciibtn);
-    qhb->addStretch();
-    qhb->addWidget(sjisbtn);
-
-    qvb = new QVBoxLayout;
-
-    qvb->addLayout(qhb);
-    qvb->addWidget(viewer);
-
     dummy = new QWidget;
-    dummy->setLayout(qvb);
+
+    idlist->setModel(idmod);
+    idlist->setSelectionMode(QAbstractItemView::SingleSelection);
+
+    qhb->addWidget(idlist);
+    qhb->addWidget(msgview);
+
+    dummy->setLayout(qhb);
 
     setCentralWidget(dummy);
 
-    connect(asciibtn, &QPushButton::clicked, this, &TextViewer::transASCII);
-    connect(sjisbtn, &QPushButton::clicked, this, &TextViewer::transShiftJIS);
+    connect(idlist->selectionModel(), &QItemSelectionModel::currentChanged, this, &TextViewer::chooseText);
+}
+
+void TextViewer::chooseText(const QItemSelection & sel, const QItemSelection & /*desel*/) {
+    // we can assume one selection because we asked for single selections in the
+    // constructor.
+
+    // we check for a valid parent as a way of making sure we'll only do stuff
+    // when an ID, not a language, is selected.
+    if (sel.indexes().at(0).parent().isValid()) {
+        size_t address = idmod->data(sel.indexes().at(0), TextIDModel::rawRole).toUInt();
+        Config::Language lang = static_cast<Config::Language>(idmod->data(sel.indexes().at(0).parent(), TextIDModel::rawRole).toUInt());
+
+        ROM::File msgfile;
+
+        switch (lang) {
+          case Config::Language::JP:
+            msgfile = trom.getFileNamed(Config::File::jpn_message_data_static);
+            break;
+
+          case Config::Language::EN:
+            msgfile = trom.getFileNamed(Config::File::nes_message_data_static);
+            break;
+
+          case Config::Language::DE:
+            msgfile = trom.getFileNamed(Config::File::ger_message_data_static);
+            break;
+
+          case Config::Language::FR:
+            msgfile = trom.getFileNamed(Config::File::fra_message_data_static);
+            break;
+        }
+
+        std::vector<uint8_t> the_text;
+
+        auto readptr = msgfile.begin() + address;
+
+        while (*readptr != 0x03) {
+            the_text.push_back(*readptr++);
+        }
+
+        std::string res;
+
+        if (lang == Config::Language::JP) {
+            // ...
+        } else {
+            res = transASCII(the_text);
+        }
+
+        msgview->setPlainText(res.c_str());
+    }
 }
 
 void TextViewer::transASCII() {
@@ -266,8 +311,4 @@ void TextViewer::transASCII() {
             viewer->insertPlainText(QString("\\x{%1}").arg(tdata.at(i), 2, 16, QChar('0')));
         }
     }            
-}
-
-void TextViewer::transShiftJIS() {
-
 }

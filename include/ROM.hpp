@@ -6,67 +6,85 @@
 
 #pragma once
 
+#include "Config.hpp"
+#include "ConfigTree.hpp"
+
 #include <cstdint>
 #include <vector>
 #include <map>
 #include <cstddef>
 #include <string>
 
-struct ROMRecord {
-    uint32_t vstart;
-    uint32_t vend;
-    uint32_t pstart;
-    uint32_t pend;
+namespace ROM {
 
-    bool isCompressed() const;
-    bool isMissing() const;
-    size_t psize() const;
-    size_t vsize() const;
-};
+    struct Record {
+        uint32_t vstart;
+        uint32_t vend;
+        uint32_t pstart;
+        uint32_t pend;
+        std::string fname;
 
-class ROMFile {
-  private:
-    std::vector<uint8_t> fileData;
-    ROMRecord foundAt;
-    bool decompressed = false; // used to avoid re-decomp attempts
+        bool isCompressed() const;
+        bool isMissing() const;
+        size_t psize() const;
+        size_t vsize() const;
+    };
 
-  public:
-    ROMFile() = default;
-    ROMFile(const std::vector<uint8_t> & fd, const ROMRecord & fa);
+    class File {
+      private:
+        std::vector<uint8_t> fileData;
+        Record foundAt;
+        bool decompressed = false; // used to avoid re-decomp attempts
 
-    ROMRecord record() const;
+      public:
+        File() = default;
+        File(const std::vector<uint8_t> & fd, const Record & fa);
 
-    size_t size() const;
+        Record record() const;
 
-    uint8_t at(size_t idx) const;
+        size_t size() const;
 
-    ROMFile decompress() const;
-};
+        uint8_t at(size_t idx) const;
 
-class ROM {
-  private:
-    std::vector<uint8_t> rawData;
-    std::vector<ROMRecord> fileList;
+        File decompress() const;
 
-    std::map<size_t, ROMFile> fcache;
+        std::vector<uint8_t> getData() const;
+    };
 
-  public:
-    ROM() = default;
-    ROM(const std::vector<uint8_t> & rd);
+    class ROM {
+      private:
+        std::vector<uint8_t> rawData;
+        std::vector<Record> fileList;
 
-    void byteSwap();
+        std::map<size_t, File> fcache;
 
-    size_t bootstrapTOC(size_t firstEntry);
+        Config::Version rver;
+        ConfigTree ctree;
 
-    size_t numfiles() const;
-    ROMFile fileAt(size_t idx);
+        void bootstrapCompTime(size_t strat);
 
-    ROMRecord fileidx(size_t idx) const;
+      public:
+        ROM() = default;
+        ROM(const std::vector<uint8_t> & rd);
+        void byteSwap();
+        size_t bootstrapTOC(size_t firstEntry);
 
-    size_t size() const;
+        size_t numfiles() const;
+        File fileAt(size_t idx);
 
-    std::string get_rname() const;
-    std::string get_rcode() const;
+        File fileAtVAddr(size_t addr);
 
-    std::vector<uint8_t> getData() const;
-};
+        File fileAtName(std::string name);
+
+        Record recordAt(size_t idx) const;
+
+        size_t size() const;
+
+        std::string get_rname() const;
+        std::string get_rcode() const;
+
+        std::vector<uint8_t> getData() const;
+
+        Config::Version getVersion() const;
+    };
+}

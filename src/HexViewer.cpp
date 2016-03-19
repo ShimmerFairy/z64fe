@@ -11,7 +11,7 @@
 #include <QSettings>
 #include <QFontMetrics>
 
-HexFileModel::HexFileModel(ROMFile mf) : myfile(mf) { }
+HexFileModel::HexFileModel(ROM::File mf) : myfile(mf) { }
 
 int HexFileModel::rowCount(const QModelIndex & /*parent*/) const {
     return ((myfile.size() - 1) / 16) + 1;
@@ -47,7 +47,7 @@ QVariant HexFileModel::headerData(int sect, Qt::Orientation orient, int role) co
     }
 }
 
-HexFileTextModel::HexFileTextModel(ROMFile mf) : HexFileModel(mf) { }
+HexFileTextModel::HexFileTextModel(ROM::File mf) : HexFileModel(mf) { }
 
 QVariant HexFileTextModel::data(const QModelIndex & idx, int role) const {
     if (!idx.isValid()
@@ -127,7 +127,7 @@ QVariant HexFileTextModel::data(const QModelIndex & idx, int role) const {
     }
 }
 
-HexViewer::HexViewer(ROMFile mf) : hfm(mf), hftm(mf) {
+HexViewer::HexViewer(ROM::File mf) : hfm(mf), hftm(mf) {
     setAttribute(Qt::WA_DeleteOnClose);
     setWindowTitle(QString("File %1-%2")
                    .arg(QString("%1").arg(mf.record().vstart, 8, 16, QChar('0')).toUpper())
