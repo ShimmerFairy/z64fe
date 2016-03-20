@@ -198,6 +198,8 @@ void MainWindow::processROM(std::string fileName) {
         the_rom_model->endResetting();
     }
 
+    filesView->resizeColumnsToContents();
+
     // now we can show the real screen (no change if not on intro screen)
     setCentralWidget(dummy);
 
