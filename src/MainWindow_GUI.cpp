@@ -137,6 +137,36 @@ void MainWindow::guiMakeFileTab() {
     connect(decompviewbtn, &QPushButton::clicked, this, &MainWindow::decompAndOpen);
 }
 
+void MainWindow::guiIntroScreen() {
+    introlbl = new QLabel(tr("Welcome to Z64Fe!"));
+    introsublbl = new QLabel(tr("Please open a ROM file to start."));
+
+    QFont fnta = introlbl->font();
+    fnta.setPointSize(18);
+    introlbl->setFont(fnta);
+    introlbl->setAlignment(Qt::AlignCenter);
+
+    QFont fntb = introsublbl->font();
+    fntb.setItalic(true);
+    introsublbl->setFont(fntb);
+    introsublbl->setAlignment(Qt::AlignCenter);
+
+    introload = new QPushButton(QIcon::fromTheme("document-open"), tr("Open ROM..."));
+    connect(introload, &QPushButton::clicked, this, &MainWindow::openROM);
+
+    introqvb = new QVBoxLayout;
+
+    introqvb->addStretch(2);
+    introqvb->addWidget(introlbl);
+    introqvb->addWidget(introsublbl);
+    introqvb->addStretch(4);
+    introqvb->addWidget(introload);
+    introqvb->addStretch(1);
+
+    introdummy = new QWidget;
+    introdummy->setLayout(introqvb);
+}
+
 void MainWindow::guiAssembleWindow() {
     // call all the "subordinate" functions
     guiMakeMenu();
@@ -160,5 +190,9 @@ void MainWindow::guiAssembleWindow() {
 
     dummy->setLayout(qvb);
 
-    setCentralWidget(dummy);
+    guiIntroScreen();
+
+    setCentralWidget(introdummy);
+
+    resize(400, 500);
 }

@@ -198,6 +198,9 @@ void MainWindow::processROM(std::string fileName) {
         the_rom_model->endResetting();
     }
 
+    // now we can show the real screen (no change if not on intro screen)
+    setCentralWidget(dummy);
+
     // connect table view's signal
     connect(filesView->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::chooseFile);
 

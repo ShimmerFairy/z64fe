@@ -33,6 +33,20 @@ class MainWindow : public QMainWindow {
   private:
     std::vector<QWidget *> childWindows;
 
+    /*******************************
+     * INTRODUCTION SCREEN WIDGETS *
+     *******************************/
+
+    QWidget * introdummy;
+    QVBoxLayout * introqvb;
+    QLabel * introlbl;
+    QLabel * introsublbl;
+    QPushButton * introload;
+
+    /**************************
+     * REGULAR SCREEN WIDGETS *
+     **************************/
+
     QWidget * dummy;
 
     QVBoxLayout * qvb;
@@ -91,6 +105,7 @@ class MainWindow : public QMainWindow {
 
     // function to handle separate parts of the GUI, implemented in separate
     // file
+    void guiIntroScreen();
     void guiMakeMenu();
     void guiMakeLister();
     void guiMakeROMTab();
