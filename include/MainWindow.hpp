@@ -12,7 +12,7 @@
 
 #include <QMainWindow>
 #include <QTableView>
-#include <QHBoxLayout>
+#include <QTabWidget>
 #include <QVBoxLayout>
 #include <QGroupBox>
 #include <QMenuBar>
@@ -39,10 +39,10 @@ class MainWindow : public QMainWindow {
 
     QTableView * filesView;
 
-    QHBoxLayout * qhb;
+    QTabWidget * control_panel;
 
-    QGroupBox * rominfo;
-    QGroupBox * fileinfo;
+    QWidget * rom_tab;
+    QWidget * basic_file_tab;
 
     QGridLayout * rigrid;
     QLabel * rnamekey;
@@ -93,8 +93,8 @@ class MainWindow : public QMainWindow {
     // file
     void guiMakeMenu();
     void guiMakeLister();
-    void guiMakeROMInfo();
-    void guiMakeFileInfo();
+    void guiMakeROMTab();
+    void guiMakeFileTab();
     void guiAssembleWindow();
 //  private slots:
     void openROM();

@@ -185,7 +185,7 @@ void MainWindow::processROM(std::string fileName) {
         std::exit(1);
     }
 
-    progbox.setValue(progbox.value() + fsize);
+    progbox.setValue(fsize * 4);
 
     // if we haven't loaded a ROM before, set up everything we need
     if (the_rom_model == nullptr) {

@@ -205,15 +205,13 @@ ConfigTree::ConfigTree(std::ifstream & infile) {
     }
 }
 
-ConfigTree::ConfigTree(const ConfigTree & copyct) : rootNode(new ConfigTreeNode(*(copyct.rootNode))) { std::cerr << "C\n"; }
+ConfigTree::ConfigTree(const ConfigTree & copyct) : rootNode(new ConfigTreeNode(*(copyct.rootNode))) { }
 
 ConfigTree::ConfigTree(ConfigTree && movect) : rootNode(movect.rootNode) {
-    std::cerr << "M\n";
     movect.rootNode = nullptr;
 }
 
 ConfigTree & ConfigTree::operator=(const ConfigTree & copyct) {
-    std::cerr << "CA\n";
     if (&copyct == this) {
         return *this;
     }
@@ -226,7 +224,6 @@ ConfigTree & ConfigTree::operator=(const ConfigTree & copyct) {
 }
 
 ConfigTree & ConfigTree::operator=(ConfigTree && movect) {
-    std::cerr << "MA\n";
     if (&movect == this) {
         return *this;
     }

@@ -19,7 +19,7 @@ int ROMFileModel::columnCount(const QModelIndex & /*parent*/) const {
     // currently only support the four columns, eventually there'll also be a
     // type column, and when able a separate filename column
 
-    return 5;
+    return 3;
 }
 
 QVariant ROMFileModel::data(const QModelIndex & index, int role) const {
@@ -34,18 +34,10 @@ QVariant ROMFileModel::data(const QModelIndex & index, int role) const {
             break;
 
           case 1:
-            return QString("0x%1").arg(QString("%1").arg(data_src->recordAt(index.row()).pstart, 0, 16).toUpper());
-            break;
-
-          case 2:
-            return QString(sizeToIEC(data_src->recordAt(index.row()).psize()).c_str());
-            break;
-
-          case 3:
             return QString("0x%1").arg(QString("%1").arg(data_src->recordAt(index.row()).vstart, 0, 16).toUpper());
             break;
 
-          case 4:
+          case 2:
             return QString(sizeToIEC(data_src->recordAt(index.row()).vsize()).c_str());
             break;
         }
@@ -74,19 +66,11 @@ QVariant ROMFileModel::headerData(int sect, Qt::Orientation orient, int role) co
             break;
 
           case 1:
-            return "ROM Location";
-            break;
-
-          case 2:
-            return "ROM Size";
-            break;
-
-          case 3:
             return "Virtual Location";
             break;
 
-          case 4:
-            return "Virtual Size";
+          case 2:
+            return "File Size";
             break;
         }
 

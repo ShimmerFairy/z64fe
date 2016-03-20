@@ -41,8 +41,8 @@ void MainWindow::guiMakeLister() {
     the_rom_model = nullptr;
 }
 
-void MainWindow::guiMakeROMInfo() {
-    rominfo = new QGroupBox(tr("ROM Info"));
+void MainWindow::guiMakeROMTab() {
+    rom_tab = new QWidget;
     rigrid = new QGridLayout;
 
     rnamekey = new QLabel(tr("ROM Name:"));
@@ -68,7 +68,7 @@ void MainWindow::guiMakeROMInfo() {
 
     rigrid->addWidget(savebs, 4, 0, 1, 2);
 
-    rominfo->setLayout(rigrid);
+    rom_tab->setLayout(rigrid);
 
     //
     // CONNECTIONS
@@ -77,8 +77,8 @@ void MainWindow::guiMakeROMInfo() {
     connect(savebs, &QPushButton::clicked, this, &MainWindow::saveROM);
 }
 
-void MainWindow::guiMakeFileInfo() {
-    fileinfo = new QGroupBox(tr("File Info"));
+void MainWindow::guiMakeFileTab() {
+    basic_file_tab = new QWidget;
 
     figrid = new QGridLayout;
 
@@ -127,7 +127,7 @@ void MainWindow::guiMakeFileInfo() {
 
     figrid->setSpacing(10);
 
-    fileinfo->setLayout(figrid);
+    basic_file_tab->setLayout(figrid);
 
     //
     // CONNECTIONS
@@ -141,21 +141,20 @@ void MainWindow::guiAssembleWindow() {
     // call all the "subordinate" functions
     guiMakeMenu();
     guiMakeLister();
-    guiMakeROMInfo();
-    guiMakeFileInfo();
+    guiMakeROMTab();
+    guiMakeFileTab();
 
     // now to assemble all the disparate pieces
 
-    qhb = new QHBoxLayout;
+    control_panel = new QTabWidget;
 
-    qhb->addWidget(rominfo);
-    qhb->addStretch();
-    qhb->addWidget(fileinfo);
+    control_panel->addTab(rom_tab, tr("ROM Info"));
+    control_panel->addTab(basic_file_tab, tr("File Info"));
 
     qvb = new QVBoxLayout;
 
     qvb->addWidget(filesView);
-    qvb->addLayout(qhb);
+    qvb->addWidget(control_panel);
 
     dummy = new QWidget;
 
