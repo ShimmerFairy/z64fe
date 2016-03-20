@@ -12,4 +12,9 @@ find_package(Qt5Widgets)
 
 include_directories(include)
 
+configure_file("${PROJECT_SOURCE_DIR}/include/projectinfo.hpp.in"
+               "${PROJECT_BINARY_DIR}/include/projectinfo.hpp")
+
+include_directories("${PROJECT_BINARY_DIR}/include")
+
 add_subdirectory(src)

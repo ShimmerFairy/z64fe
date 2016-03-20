@@ -1,0 +1,16 @@
+/** \file projectinfo.hpp.in
+ *
+ *  \brief Input file to be configured by CMake, providing various kinds of
+ *  important info.
+ *
+ */
+
+#pragma once
+
+#include <string>
+
+namespace PInfo {
+    const std::string VERSION = "@PROJECT_VERSION@";
+
+    const std::string DEVSHAREPATH = "@CMAKE_SOURCE_DIR@/share/";
+}

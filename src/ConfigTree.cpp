@@ -4,11 +4,13 @@
  *
  */
 
+#include "projectinfo.hpp"
 #include "ConfigTree.hpp"
 #include "Exceptions.hpp"
 
 #include <QString>
 #include <QStandardPaths>
+#include <QFileInfo>
 
 #include <sstream>
 #include <algorithm>
@@ -140,10 +142,12 @@ ConfigTree::ConfigTree(std::ifstream & infile) {
                 throw X::Config::SyntaxError("Unexpected closing brace");
             }
 
+            linestream.get(); // now actually take the brace
+
             // now to make sure there isn't garbage after the close brace
-            while (linestream) {
+            while (std::stringstream::traits_type::not_eof(linestream.peek())) {
                 if (linestream.peek() != '#' && !std::isspace(linestream.peek())) {
-                    throw X::Config::SyntaxError("Garbage after closing brace");
+                    throw X::Config::SyntaxError(std::string("Garbage after closing brace: '") + static_cast<char>(linestream.peek()) + std::string("'"));
                 } else if (linestream.peek() == '#') {
                     // make sure that we stop when a comment happens, so we
                     // don't pick up the comment itself as garbage
@@ -159,7 +163,7 @@ ConfigTree::ConfigTree(std::ifstream & infile) {
 
         std::string akey;
 
-        while (linestream
+        while (std::stringstream::traits_type::not_eof(linestream.peek())
                && linestream.peek() != '='
                && linestream.peek() != '{'
                && linestream.peek() != '#'
@@ -173,13 +177,14 @@ ConfigTree::ConfigTree(std::ifstream & infile) {
             ConfigTreeNode * nn = new ConfigTreeNode(akey);
             nodestack.back()->addChild(nn);
             nodestack.push_back(nn);
+            nn = nullptr;
         } else if (linestream.peek() == '=') { // kv pair
             std::string aval;
 
             linestream.get();
             linestream >> std::ws;
 
-            while (linestream && linestream.peek() != '#') {
+            while (std::stringstream::traits_type::not_eof(linestream.peek()) && linestream.peek() != '#') {
                 aval.push_back(linestream.get());
             }
 
@@ -200,11 +205,15 @@ ConfigTree::ConfigTree(std::ifstream & infile) {
     }
 }
 
-ConfigTree::ConfigTree(const ConfigTree & copyct) : rootNode(new ConfigTreeNode(*(copyct.rootNode))) { }
+ConfigTree::ConfigTree(const ConfigTree & copyct) : rootNode(new ConfigTreeNode(*(copyct.rootNode))) { std::cerr << "C\n"; }
 
-ConfigTree::ConfigTree(ConfigTree && movect) : rootNode(std::move(movect.rootNode)) { }
+ConfigTree::ConfigTree(ConfigTree && movect) : rootNode(movect.rootNode) {
+    std::cerr << "M\n";
+    movect.rootNode = nullptr;
+}
 
 ConfigTree & ConfigTree::operator=(const ConfigTree & copyct) {
+    std::cerr << "CA\n";
     if (&copyct == this) {
         return *this;
     }
@@ -217,13 +226,16 @@ ConfigTree & ConfigTree::operator=(const ConfigTree & copyct) {
 }
 
 ConfigTree & ConfigTree::operator=(ConfigTree && movect) {
+    std::cerr << "MA\n";
     if (&movect == this) {
         return *this;
     }
 
     delete rootNode;
 
-    rootNode = std::move(movect.rootNode);
+    rootNode = movect.rootNode;
+
+    movect.rootNode = nullptr;
 
     return *this;
 }
@@ -283,7 +295,11 @@ ConfigTree getConfigTree(Config::Version forVer) {
                                              (vFileStr(forVer) + ".cfg").c_str());
 
     if (getfrom == "") {
-        return ConfigTree();
+        getfrom = QString("%1/%2").arg(PInfo::DEVSHAREPATH.c_str()).arg((vFileStr(forVer) + ".cfg").c_str());
+
+        if (!QFileInfo(getfrom).exists()) {
+            return ConfigTree();
+        }
     }
 
     std::ifstream cfile(getfrom.toStdString());

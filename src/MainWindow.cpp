@@ -8,6 +8,7 @@
 #include "utility.hpp"
 #include "HexViewer.hpp"
 #include "TextViewer.hpp"
+#include "Exceptions.hpp"
 
 #include <QFileDialog>
 #include <QMessageBox>
@@ -175,7 +176,14 @@ void MainWindow::processROM(std::string fileName) {
 
     size_t numfiles;
 
-    numfiles = the_rom.bootstrapTOC(foundPos + 0x30);
+    try {
+        numfiles = the_rom.bootstrapTOC(foundPos + 0x30);
+    } catch(Exception & e) {
+        progbox.cancel();
+        QMessageBox::critical(this, tr("Error in reading ROM"),
+                              tr("An error occurred while processing the ROM: %1").arg(e.what().c_str()));
+        std::exit(1);
+    }
 
     progbox.setValue(progbox.value() + fsize);
 
