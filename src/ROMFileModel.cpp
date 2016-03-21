@@ -7,7 +7,7 @@
 #include "ROMFileModel.hpp"
 #include "utility.hpp"
 
-#include <QBrush>
+#include <QIcon>
 
 ROMFileModel::ROMFileModel(ROM::ROM * ds) : data_src(ds) { }
 
@@ -43,11 +43,13 @@ QVariant ROMFileModel::data(const QModelIndex & index, int role) const {
         }
 
         return "ERROR!";
-    } else if (role == Qt::BackgroundRole) {
-        if (data_src->recordAt(index.row()).isCompressed()) {
-            return QBrush(Qt::cyan);
-        } else if (data_src->recordAt(index.row()).isMissing()) {
-            return QBrush(Qt::darkGray);
+    } else if (role == Qt::DecorationRole) {
+        if (index.column() == 0) {
+            if (data_src->recordAt(index.row()).isCompressed()) {
+                return QIcon::fromTheme("package-x-generic");
+            } else if (data_src->recordAt(index.row()).isMissing()) {
+                return QIcon(":/icons/application-missing.svg");
+            }
         }
     }
 
