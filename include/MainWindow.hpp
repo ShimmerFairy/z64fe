@@ -57,6 +57,7 @@ class MainWindow : public QMainWindow {
 
     QWidget * rom_tab;
     QWidget * basic_file_tab;
+    QWidget * text_tab;
 
     QGridLayout * rigrid;
     QLabel * rnamekey;
@@ -85,7 +86,13 @@ class MainWindow : public QMainWindow {
     QPushButton * hexviewbtn;
     QPushButton * decompviewbtn;
 
-    QPushButton * txtview;
+    QGridLayout * tigrid;
+    QLabel * tNumberKey;
+    QLabel * tNumberValue;
+    QLabel * tLangsKey;
+    QLabel * tLangsValue;
+    QPushButton * tReadTbl;
+    QPushButton * tSeeText;
 
     QMenu * fileMenu;
     QAction * actOpen;
@@ -110,8 +117,12 @@ class MainWindow : public QMainWindow {
     void guiMakeLister();
     void guiMakeROMTab();
     void guiMakeFileTab();
+    void guiMakeTextTab();
     void guiAssembleWindow();
-//  private slots:
+
+    void guiNewROM_TextTab();
+
+  private slots:
     void openROM();
     void saveROM();
 
@@ -120,7 +131,8 @@ class MainWindow : public QMainWindow {
     void openRawView();
     void decompAndOpen();
 
-    void textView();
+    void analyzeTextTbl();
+    void openTextViewer();
 
     void rmWindow(QObject * item);
 

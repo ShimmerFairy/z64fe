@@ -11,6 +11,12 @@ std::string Exception::what() {
 }
 
 namespace X {
+    InternalError::InternalError(std::string sp) : specifics(sp) { }
+
+    std::string InternalError::what() {
+        return "An internal error has occurred! " + specifics + " This is most likely an issue with the internal workings of the program, and not so much a problem on your end.";
+    }
+
     NYI::NYI(std::string whatthing) : feature(whatthing) { }
 
     std::string NYI::what() {

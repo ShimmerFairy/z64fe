@@ -137,6 +137,41 @@ void MainWindow::guiMakeFileTab() {
     connect(decompviewbtn, &QPushButton::clicked, this, &MainWindow::decompAndOpen);
 }
 
+void MainWindow::guiMakeTextTab() {
+    tNumberKey = new QLabel(tr("Number of messages:"));
+    tNumberValue = new QLabel(tr("n/a"));
+    tLangsKey = new QLabel(tr("Languages:"));
+    tLangsValue = new QLabel(tr("n/a"));
+
+    tReadTbl = new QPushButton(tr("No ROM Loaded"));
+    tReadTbl->setEnabled(false);
+    tSeeText = new QPushButton(tr("No ROM Loaded"));
+    tSeeText->setEnabled(false);
+
+    tigrid = new QGridLayout;
+
+    tigrid->addWidget(tNumberKey, 0, 0, Qt::AlignRight);
+    tigrid->addWidget(tNumberValue, 0, 1, Qt::AlignLeft);
+    tigrid->addWidget(tLangsKey, 1, 0, Qt::AlignRight);
+    tigrid->addWidget(tLangsValue, 1, 1, Qt::AlignLeft);
+
+    tigrid->addWidget(makeGridLine(Qt::Vertical), 0, 2, 2, 1);
+
+    tigrid->addWidget(tReadTbl, 0, 3, 1, 3);
+    tigrid->addWidget(tSeeText, 1, 3, 1, 3);
+
+    text_tab = new QWidget;
+
+    text_tab->setLayout(tigrid);
+
+    //
+    // CONNECTIONS
+    //
+
+    connect(tReadTbl, &QPushButton::clicked, this, &MainWindow::analyzeTextTbl);
+    connect(tSeeText, &QPushButton::clicked, this, &MainWindow::openTextViewer);
+}
+
 void MainWindow::guiIntroScreen() {
     introlbl = new QLabel(tr("Welcome to Z64Fe!"));
     introsublbl = new QLabel(tr("Please open a ROM file to start."));
@@ -173,6 +208,7 @@ void MainWindow::guiAssembleWindow() {
     guiMakeLister();
     guiMakeROMTab();
     guiMakeFileTab();
+    guiMakeTextTab();
 
     // now to assemble all the disparate pieces
 
@@ -180,6 +216,7 @@ void MainWindow::guiAssembleWindow() {
 
     control_panel->addTab(rom_tab, tr("ROM Info"));
     control_panel->addTab(basic_file_tab, tr("File Info"));
+    control_panel->addTab(text_tab, tr("Message Text"));
 
     qvb = new QVBoxLayout;
 
@@ -195,4 +232,29 @@ void MainWindow::guiAssembleWindow() {
     setCentralWidget(introdummy);
 
     resize(400, 500);
+}
+
+void MainWindow::guiNewROM_TextTab() {
+    tNumberValue->setText("--");
+    tLangsValue->setText("--");
+
+    if (Config::getGame(the_rom.getVersion()) == Config::Game::Majora) {
+        tReadTbl->setEnabled(false);
+        tSeeText->setEnabled(false);
+
+        tReadTbl->setText(tr("Majora's mask text NYI"));
+        tSeeText->setText(tr("Majora's mask text NYI"));
+    } else if (!the_rom.hasConfigKey({"codeData", "TextMsgTable"})) {
+        tReadTbl->setEnabled(false);
+        tSeeText->setEnabled(false);
+
+        tReadTbl->setText(tr("Can't read text from this ROM"));
+        tSeeText->setText(tr("Missing needed config data"));
+    } else {
+        tReadTbl->setEnabled(true);
+        tSeeText->setEnabled(true);
+
+        tReadTbl->setText(tr("&Analyze Message Table"));
+        tSeeText->setText(tr("&View Text Messages"));
+    }
 }

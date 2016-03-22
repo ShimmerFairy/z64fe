@@ -6,13 +6,18 @@
 
 #include "TextViewer.hpp"
 #include "endian.hpp"
+#include "Exceptions.hpp"
 
 #include <QString>
 #include <QMessageBox>
 
-TextViewer::TextViewer(ROM::ROM r) : trom(r) {
+#include <sstream>
+#include <iomanip>
+#include <iostream>
+
+TextViewer::TextViewer(ROM::ROM & r) : trom(&r) {
     idlist = new QTreeView;
-    idmod = new TextIDModel(trom.getFileNamed(Config::File::code), trom.getVersion());
+    idmod = new TextIDModel(trom->msgTbl());
     msgview = new QTextEdit;
     qhb = new QHBoxLayout;
     dummy = new QWidget;
@@ -27,63 +32,72 @@ TextViewer::TextViewer(ROM::ROM r) : trom(r) {
 
     setCentralWidget(dummy);
 
+    setWindowTitle(tr("Z64Fe - Text Viewer"));
+
     connect(idlist->selectionModel(), &QItemSelectionModel::currentChanged, this, &TextViewer::chooseText);
 }
 
-void TextViewer::chooseText(const QItemSelection & sel, const QItemSelection & /*desel*/) {
+void TextViewer::chooseText(const QModelIndex & sel, const QModelIndex & /*desel*/) {
     // we can assume one selection because we asked for single selections in the
     // constructor.
 
     // we check for a valid parent as a way of making sure we'll only do stuff
     // when an ID, not a language, is selected.
-    if (sel.indexes().at(0).parent().isValid()) {
-        size_t address = idmod->data(sel.indexes().at(0), TextIDModel::rawRole).toUInt();
-        Config::Language lang = static_cast<Config::Language>(idmod->data(sel.indexes().at(0).parent(), TextIDModel::rawRole).toUInt());
+    if (sel.parent().isValid()) {
+        uint32_t address = idmod->data(sel, TextIDModel::rawRole).toUInt();
+        Config::Language lang = static_cast<Config::Language>(idmod->data(sel.parent(), TextIDModel::rawRole).toUInt());
 
         ROM::File msgfile;
 
-        switch (lang) {
-          case Config::Language::JP:
-            msgfile = trom.getFileNamed(Config::File::jpn_message_data_static);
-            break;
+        try {
+            switch (lang) {
+              case Config::Language::JP:
+                msgfile = trom->fileAtName("jpn_message_data_static");
+                break;
 
-          case Config::Language::EN:
-            msgfile = trom.getFileNamed(Config::File::nes_message_data_static);
-            break;
+              case Config::Language::EN:
+                msgfile = trom->fileAtName("nes_message_data_static");
+                break;
 
-          case Config::Language::DE:
-            msgfile = trom.getFileNamed(Config::File::ger_message_data_static);
-            break;
+              case Config::Language::DE:
+                msgfile = trom->fileAtName("ger_message_data_static");
+                break;
 
-          case Config::Language::FR:
-            msgfile = trom.getFileNamed(Config::File::fra_message_data_static);
-            break;
+              case Config::Language::FR:
+                msgfile = trom->fileAtName("fra_message_data_static");
+                break;
+            }
+        } catch (Exception & e) {
+            QMessageBox::critical(this, tr("ERROR!"),
+                                  e.what().c_str());
+            std::exit(-1);
         }
 
         std::vector<uint8_t> the_text;
 
         auto readptr = msgfile.begin() + address;
 
-        while (*readptr != 0x03) {
-            the_text.push_back(*readptr++);
-        }
-
+        bool keepGoing = true;
         std::string res;
 
         if (lang == Config::Language::JP) {
-            // ...
+            //...
         } else {
-            res = transASCII(the_text);
+            while (keepGoing) {
+                res += transASCII(readptr, keepGoing);
+            }
         }
 
         msgview->setPlainText(res.c_str());
     }
 }
 
-void TextViewer::transASCII() {
-    viewer->clear();
+std::string TextViewer::transASCII(std::vector<uint8_t>::iterator & takethis, bool & cont) {
+    std::stringstream r;
 
-    std::map<uint8_t, QString> specialChar{
+    r << std::uppercase;
+
+    static const std::map<uint8_t, std::string> specialChar{
         { 0x7F, "‾" },
         { 0x80, "À" },
         { 0x81, "Î" },
@@ -130,185 +144,189 @@ void TextViewer::transASCII() {
         { 0xAA, "\\analogStick{}" },
         { 0xAB, "\\dPad{}" }};
 
-    for (size_t i = 0; i < tdata.size(); i++) {
-        if (tdata.at(i) < 0x20) {
-            switch (tdata.at(i)) {
-              case 0x00:
-                viewer->insertPlainText("\\0{}");
+    if (*takethis < 0x20) {
+        switch (*takethis) {
+          case 0x00:
+            r << "\\0{}";
+            break;
+
+          case 0x01:
+            r << "\n";
+            break;
+
+          case 0x02:
+            r << "\\endMsg{}";
+            cont = false;
+            break;
+
+          case 0x04:
+            r << "\\newBox{}";
+            break;
+
+          case 0x05:
+            r << "\\color{";
+            switch (*(++takethis)) {
+              case 0x40:
+                r << "white";
                 break;
 
-              case 0x01:
-                viewer->insertPlainText("\n");
+              case 0x41:
+                r << "red";
                 break;
 
-              case 0x02:
-                viewer->insertPlainText("\\endMsg{}");
+              case 0x42:
+                r << "green";
                 break;
 
-              case 0x04:
-                viewer->insertPlainText("\\newBox{}");
+              case 0x43:
+                r << "blue";
                 break;
 
-              case 0x05:
-                viewer->insertPlainText("\\color{");
-                switch (tdata.at(++i)) {
-                  case 0x40:
-                    viewer->insertPlainText("white");
-                    break;
-
-                  case 0x41:
-                    viewer->insertPlainText("red");
-                    break;
-
-                  case 0x42:
-                    viewer->insertPlainText("green");
-                    break;
-
-                  case 0x43:
-                    viewer->insertPlainText("blue");
-                    break;
-
-                  case 0x44:
-                    viewer->insertPlainText("cyan");
-                    break;
-
-                  case 0x45:
-                    viewer->insertPlainText("magenta");
-                    break;
-
-                  case 0x46:
-                    viewer->insertPlainText("yellow");
-                    break;
-
-                  case 0x47:
-                    viewer->insertPlainText("black");
-                    break;
-
-                  default:
-                    viewer->insertPlainText(QString("UNKNOWN! (0x%1)").arg(tdata.at(i), 2, 16, QChar('0')));
-                    break;
-                }
-                viewer->insertPlainText("}");
+              case 0x44:
+                r << "cyan";
                 break;
 
-              case 0x06:
-                viewer->insertPlainText(QString("\\spaces{%1}").arg(tdata.at(++i)));
+              case 0x45:
+                r << "magenta";
                 break;
 
-              case 0x07:
-                viewer->insertPlainText(QString("\\goto{0x%1").arg(tdata.at(++i), 2, 16, QChar('0')));
-                viewer->insertPlainText(QString("%1}").arg(tdata.at(++i), 2, 16, QChar('0')));
+              case 0x46:
+                r << "yellow";
                 break;
 
-              case 0x08:
-                viewer->insertPlainText("\\instantTextOn{}");
+              case 0x47:
+                r << "black";
                 break;
 
-              case 0x09:
-                viewer->insertPlainText("\\instantTextOff{}");
-                break;
-
-              case 0x0A:
-                viewer->insertPlainText("\\stayOpen{}");
-                break;
-
-              case 0x0B:
-                viewer->insertPlainText("\\UnknownTrigger0B{}");
-                break;
-
-              case 0x0C:
-                viewer->insertPlainText(QString("\\sleepFrames{%1}").arg(tdata.at(++i)));
-                break;
-
-              case 0x0D:
-                viewer->insertPlainText("\\waitOnButton{}");
-                break;
-
-              case 0x0E:
-                viewer->insertPlainText(QString("\\sleepFramesThenFade{%1}").arg(tdata.at(++i)));
-                break;
-
-              case 0x0F:
-                viewer->insertPlainText("\\playerName{}");
-                break;
-
-              case 0x10:
-                viewer->insertPlainText("\\startOcarina{}");
-                break;
-
-              case 0x11:
-                viewer->insertPlainText("\\bailAndFadeOutNow{}");
-                break;
-
-              case 0x12:
-                viewer->insertPlainText(QString("\\sfx{0x%1").arg(tdata.at(++i), 2, 16, QChar('0')));
-                viewer->insertPlainText(QString("%1}").arg(tdata.at(++i), 2, 16, QChar('0')));
-                break;
-
-              case 0x13:
-                viewer->insertPlainText(QString("\\icon{%1}").arg(tdata.at(++i)));
-                break;
-
-              case 0x14:
-                viewer->insertPlainText(QString("\\textSpeed{%1}").arg(tdata.at(++i)));
-                break;
-
-              case 0x15:
-                viewer->insertPlainText(QString("\\msgBackground{0x%1").arg(tdata.at(++i), 2, 16, QChar('0')));
-                viewer->insertPlainText(QString("%1").arg(tdata.at(++i), 2, 16, QChar('0')));
-                viewer->insertPlainText(QString("%1}").arg(tdata.at(++i), 2, 16, QChar('0')));
-                break;
-
-              case 0x16:
-                viewer->insertPlainText("\\marathonTime{}");
-                break;
-
-              case 0x17:
-                viewer->insertPlainText("\\raceTime{}");
-                break;
-
-              case 0x18:
-                viewer->insertPlainText("\\numberOfPoints{}");
-                break;
-
-              case 0x19:
-                viewer->insertPlainText("\\numberOfGoldSkulltulas{}");
-                break;
-
-              case 0x1A:
-                viewer->insertPlainText("\\cantSkipNow{}");
-                break;
-
-              case 0x1B:
-                viewer->insertPlainText("\\twoChoices{}");
-                break;
-
-              case 0x1C:
-                viewer->insertPlainText("\\threeChoices{}");
-                break;
-
-              case 0x1D:
-                viewer->insertPlainText("\\fishWeight{}");
-                break;
-
-              case 0x1E:
-                viewer->insertPlainText(QString("\\hiscore{0x%1}").arg(tdata.at(++i), 2, 16, QChar('0')));
-                break;
-
-              case 0x1F:
-                viewer->insertPlainText("\\worldTime{}");
+              default:
+                r << "UNKNOWN! (0x"
+                  << std::hex << std::setfill('0') << std::setw(2) << +*takethis
+                  << ")";
                 break;
             }
-        } else if (0x20 <= tdata.at(i) && tdata.at(i) <= 0x7E) {
-            if (tdata.at(i) == 0x5C) {
-                viewer->insertPlainText("¥");
-            } else {
-                viewer->insertPlainText(QChar(tdata.at(i)));
-            }
-        } else if (0x7F <= tdata.at(i) && tdata.at(i) <= 0xAB) {
-            viewer->insertPlainText(specialChar[tdata.at(i)]);
-        } else {
-            viewer->insertPlainText(QString("\\x{%1}").arg(tdata.at(i), 2, 16, QChar('0')));
+            r << "}";
+            break;
+
+          case 0x06:
+            r << "\\spaces{" << std::dec << +*takethis << "}";
+            break;
+
+          case 0x07:
+            r << "\\goto{0x" << std::hex << std::setw(4) << be_u16(takethis + 1) << "}";
+            takethis += 2;
+            break;
+
+          case 0x08:
+            r << "\\instantTextOn{}";
+            break;
+
+          case 0x09:
+            r << "\\instantTextOff{}";
+            break;
+
+          case 0x0A:
+            r << "\\stayOpen{}";
+            break;
+
+          case 0x0B:
+            r << "\\UnknownTrigger0B{}";
+            break;
+
+          case 0x0C:
+            r <<"\\sleepFrames{" << std::dec << +*(++takethis) << "}";
+            break;
+
+          case 0x0D:
+            r << "\\waitOnButton{}";
+            break;
+
+          case 0x0E:
+            r << "\\sleepFramesThenFade{" << std::dec << +*(++takethis) << "}";
+            break;
+
+          case 0x0F:
+            r << "\\playerName{}";
+            break;
+
+          case 0x10:
+            r << "\\startOcarina{}";
+            break;
+
+          case 0x11:
+            r << "\\bailAndFadeOutNow{}";
+            break;
+
+          case 0x12:
+            r << "\\sfx{0x" << std::hex << std::setw(4) << be_u16(takethis + 1) << "}";
+            takethis += 2;
+            break;
+
+          case 0x13:
+            r << "\\icon{" << std::dec << +*(++takethis) << "}";
+            break;
+
+          case 0x14:
+            r << "\\textSpeed{" << std::dec << +*(++takethis) << "}";
+            break;
+
+          case 0x15:
+            r << "\\msgBackground{0x" << std::hex << std::setw(6) << be_u24(takethis + 1) << "}";
+            takethis += 3;
+            break;
+
+          case 0x16:
+            r << "\\marathonTime{}";
+            break;
+
+          case 0x17:
+            r << "\\raceTime{}";
+            break;
+
+          case 0x18:
+            r << "\\numberOfPoints{}";
+            break;
+
+          case 0x19:
+            r << "\\numberOfGoldSkulltulas{}";
+            break;
+
+          case 0x1A:
+            r << "\\cantSkipNow{}";
+            break;
+
+          case 0x1B:
+            r << "\\twoChoices{}";
+            break;
+
+          case 0x1C:
+            r << "\\threeChoices{}";
+            break;
+
+          case 0x1D:
+            r << "\\fishWeight{}";
+            break;
+
+          case 0x1E:
+            r << "\\hiscore{0x" << std::hex << std::setw(2) << +*(++takethis) << "}";
+            break;
+
+          case 0x1F:
+            r << "\\worldTime{}";
+            break;
         }
-    }            
+    } else if (0x20 <= *takethis && *takethis <= 0x7E) {
+        if (*takethis == 0x5C) {
+            r << "¥";
+        } else {
+            r << *takethis;
+        }
+    } else if (0x7F <= *takethis && *takethis <= 0xAB) {
+        r << specialChar.at(*takethis);
+    } else {
+        r << "\\x{" << std::hex << std::setw(2) << +*takethis << "}";
+    }
+
+    takethis++;
+
+    return r.str();
 }

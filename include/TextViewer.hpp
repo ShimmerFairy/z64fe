@@ -15,13 +15,13 @@
 #include <QTextEdit>
 #include <QHBoxLayout>
 
-#include <map>
+#include <vector>
 
 class TextViewer : public QMainWindow {
     Q_OBJECT
 
   private:
-    ROM::ROM trom;
+    ROM::ROM * trom;
 
     QTreeView * idlist;
     TextIDModel * idmod;
@@ -31,9 +31,11 @@ class TextViewer : public QMainWindow {
 
     QWidget * dummy;
 
+    std::string transASCII(std::vector<uint8_t>::iterator & takethis, bool & cont);
+
   private slots:
-    void chooseText(const QItemSelection & sel, const QItemSelection & desel);
+    void chooseText(const QModelIndex & sel, const QModelIndex & desel);
 
   public:
-    TextViewer(ROM::ROM r);
+    TextViewer(ROM::ROM & r);
 };

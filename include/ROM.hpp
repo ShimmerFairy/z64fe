@@ -49,6 +49,9 @@ namespace ROM {
         File decompress() const;
 
         std::vector<uint8_t> getData() const;
+
+        std::vector<uint8_t>::iterator begin();
+        std::vector<uint8_t>::iterator end();
     };
 
     class ROM {
@@ -57,6 +60,8 @@ namespace ROM {
         std::vector<Record> fileList;
 
         std::map<size_t, File> fcache;
+
+        std::map<Config::Language, std::map<uint16_t, uint32_t>> text_ids;
 
         Config::Version rver;
         ConfigTree ctree;
@@ -86,5 +91,12 @@ namespace ROM {
         std::vector<uint8_t> getData() const;
 
         Config::Version getVersion() const;
+
+        bool hasConfigKey(std::initializer_list<std::string> parts) const;
+
+        void analyzeMsgTbl();
+        size_t sizeMsgTbl() const;
+        std::string langStrMsgTbl() const;
+        std::map<Config::Language, std::map<uint16_t, uint32_t>> msgTbl() const;
     };
 }

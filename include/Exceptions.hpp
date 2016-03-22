@@ -16,6 +16,16 @@ class Exception {
 };
 
 namespace X {
+    class InternalError : public Exception {
+      private:
+        std::string specifics;
+
+      public:
+        InternalError(std::string sp);
+
+        std::string what();
+    };
+
     class NYI : public Exception {
       private:
         std::string feature;

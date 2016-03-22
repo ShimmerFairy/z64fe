@@ -9,6 +9,7 @@ add_executable(z64fe main.cpp
                      MainWindow_GUI.cpp
                      ConfigTree.cpp
                      Exceptions.cpp
-                     ${CMAKE_SOURCE_DIR}/res/qtres.qrc)
-#                     TextViewer.cpp ${CMAKE_SOURCE_DIR}/include/TextViewer.hpp)
+                     ${CMAKE_SOURCE_DIR}/res/qtres.qrc
+                     TextViewer.cpp ${CMAKE_SOURCE_DIR}/include/TextViewer.hpp
+                     TextIDModel.cpp ${CMAKE_SOURCE_DIR}/include/TextIDModel.hpp)
 target_link_libraries(z64fe Qt5::Widgets)

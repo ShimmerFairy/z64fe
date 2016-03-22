@@ -12,6 +12,7 @@
 #include <QString>
 
 #include <algorithm>
+#include <iostream>
 
 namespace ROM {
     bool Record::isCompressed() const { return pend != 0 && !isMissing(); }
@@ -46,6 +47,11 @@ namespace ROM {
             return *this;
         }
     }
+
+    std::vector<uint8_t> File::getData() const { return fileData; }
+
+    std::vector<uint8_t>::iterator File::begin() { return fileData.begin(); }
+    std::vector<uint8_t>::iterator File::end() { return fileData.end(); }
 
     ROM::ROM(const std::vector<uint8_t> & rd) : rawData(rd) { }
 
@@ -235,4 +241,150 @@ namespace ROM {
     Config::Version ROM::getVersion() const {
         return rver;
     }
+
+    bool ROM::hasConfigKey(std::initializer_list<std::string> parts) const {
+        try {
+            ctree.getValue(parts);
+            return true;
+        } catch (Exception & e) {
+            std::cerr << e.what() << "\n";
+            return false;
+        }
+    }
+
+    void ROM::analyzeMsgTbl() {
+        std::vector<uint8_t> codefile = fileAtName("code").getData();
+        size_t msgoff = std::stoul(ctree.getValue({"codeData", "TextMsgTable"}), nullptr, 0);
+
+        auto iter = codefile.begin() + msgoff;
+
+        if (Config::getGame(rver) == Config::Game::Ocarina) {
+            if (Config::getRegion(rver) == Config::Region::NTSC) {
+                // get japanese, then ID 0xFFFF, then english, then ID 0xFFFF
+
+                // first, japanese
+                while (be_u16(iter) != 0xFFFF) {
+                    uint16_t id = be_u16(iter);
+                    iter += 2;
+
+                    // skip stuff we don't currently care about
+                    iter += 2;
+
+                    uint32_t addr = be_u32(iter);
+                    iter += 4;
+
+                    // remove bank, since we have our own ways of locating
+                    // files.
+                    addr &= 0x00FFFFFF;
+
+                    // add to list of japanese IDs
+                    text_ids[Config::Language::JP][id] = addr;
+                }
+
+                // read past the invalid 0xFFFF ID
+                iter += 8;
+
+                // next, english
+                while (be_u16(iter) != 0xFFFF) {
+                    uint16_t id = be_u16(iter);
+                    iter += 2;
+
+                    // skip stuff we don't currently care about
+                    iter += 2;
+
+                    uint32_t addr = be_u32(iter);
+                    iter += 4;
+
+                    // remove bank, since we have our own ways of locating
+                    // files.
+                    addr &= 0x00FFFFFF;
+
+                    // add to list of japanese IDs
+                    text_ids[Config::Language::EN][id] = addr;
+                }
+            } else if (Config::getRegion(rver) == Config::Region::PAL) {
+                // get english, ID 0xFFFF, german addresses, null address,
+                // french addresses, null address.
+
+                // Since in this case the other languages don't get the whole ID
+                // entry, just addresses listed in order, we'll need to keep a
+                // list of IDs as they come, so we can correctly associate them
+                // with the other languages.
+
+                std::vector<uint16_t> idlist;
+
+                // First up is English
+                while (be_u16(iter) != 0xFFFF) {
+                    idlist.push_back(be_u16(iter));
+                    iter += 2;
+
+                    // skip stuff we don't currently care about
+                    iter += 2;
+
+                    uint32_t addr = be_u32(iter);
+                    iter += 4;
+
+                    // remove bank, since we have our own ways of locating
+                    // files.
+                    addr &= 0x00FFFFFF;
+
+                    // add to list of japanese IDs
+                    text_ids[Config::Language::EN][idlist.back()] = addr;
+                }
+
+                // skip the fake ID
+                iter += 8;
+
+                size_t i = 0; // for pulling correct ID
+
+                // now for German
+                while (be_u32(iter) != 0) {
+                    text_ids[Config::Language::DE][idlist[i]] = be_u32(iter) & 0x00FFFFFF;
+                    iter+=4;
+                    i++;
+                }
+
+                // skip empty address
+                iter += 4;
+
+                i = 0;
+
+                // finally, French
+                while (be_u32(iter) != 0) {
+                    text_ids[Config::Language::FR][idlist[i]] = be_u32(iter) & 0x00FFFFFF;
+                    iter+=4;
+                    i++;
+                }
+            } else {
+                throw X::InternalError("Somehow got an impossible region for Ocarina of Time.");
+            }
+        } else if (Config::getGame(rver) == Config::Game::Majora) {
+            throw X::NYI("support for Majora's mask text");
+        } else {
+            throw X::InternalError("Somehow got an impossible game from the version info (did this section get missed in some big changes?).");
+        }
+    }
+
+    size_t ROM::sizeMsgTbl() const {
+        return text_ids.begin()->second.size();
+    }
+
+    std::string ROM::langStrMsgTbl() const {
+        std::string lstr;
+
+        size_t i = 0;
+
+        for (auto & j : text_ids) {
+            lstr += Config::langString(j.first);
+            i++;
+
+            if (i < text_ids.size()) {
+                lstr += ", ";
+            }
+        }
+
+        return lstr;
+    }
+
+    std::map<Config::Language, std::map<uint16_t, uint32_t>> ROM::msgTbl() const { return text_ids; }
 }

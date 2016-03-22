@@ -222,6 +222,8 @@ void MainWindow::processROM(std::string fileName) {
     rsizeval->setText(sizeToIEC(the_rom.size()).c_str());
     rversionval->setText(Config::vDisplayStr(the_rom.getVersion()).c_str());
 
+    guiNewROM_TextTab();
+
     statusBar()->showMessage(tr("Found %1 files in the list.").arg(numfiles), 5000);
 }
 
@@ -285,13 +287,24 @@ void MainWindow::decompAndOpen() {
     newview->show();
 }
 
-void MainWindow::textView() {
-/*    TextViewer * newview = new TextViewer(curfile);
+void MainWindow::analyzeTextTbl() {
+    try {
+        the_rom.analyzeMsgTbl();
+        tNumberValue->setText(QString("%1").arg(the_rom.sizeMsgTbl()));
+        tLangsValue->setText(the_rom.langStrMsgTbl().c_str());
+    } catch (Exception & e) {
+        QMessageBox::critical(this, tr("Analysis Error"),
+                              tr("%1").arg(e.what().c_str()));
+    }
+}
 
-    connect(newview, &QTableView::destroyed, this, &MainWindow::rmWindow);
+void MainWindow::openTextViewer() {
+    TextViewer * newview = new TextViewer(the_rom);
+
+    connect(newview, &TextViewer::destroyed, this, &MainWindow::rmWindow);
     childWindows.push_back(newview);
 
-    newview->show();*/
+    newview->show();
 }
 
 void MainWindow::rmWindow(QObject * item) {
