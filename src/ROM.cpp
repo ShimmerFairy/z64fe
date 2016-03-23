@@ -253,7 +253,15 @@ namespace ROM {
     }
 
     void ROM::analyzeMsgTbl() {
-        std::vector<uint8_t> codefile = fileAtName("code").getData();
+        std::vector<uint8_t> codefile;
+        File cf = fileAtName("code");
+
+        if (cf.record().isCompressed()) {
+            cf = cf.decompress();
+        }
+
+        codefile = cf.getData();
+
         size_t msgoff = std::stoul(ctree.getValue({"codeData", "TextMsgTable"}), nullptr, 0);
 
         auto iter = codefile.begin() + msgoff;

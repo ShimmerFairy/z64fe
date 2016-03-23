@@ -32,6 +32,7 @@ class TextViewer : public QMainWindow {
     QWidget * dummy;
 
     std::string transASCII(std::vector<uint8_t>::iterator & takethis, bool & cont);
+    std::string transSJIS(std::vector<uint8_t>::iterator & takethis, bool & cont);
 
   private slots:
     void chooseText(const QModelIndex & sel, const QModelIndex & desel);

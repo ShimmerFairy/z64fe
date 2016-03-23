@@ -60,7 +60,7 @@ for %bigmap.sort {
         $ofile.print("\{ ", $_.key.fmt("0x%02X"), ", ", $_.value.fmt("0x%08X"), " \},");
     }
 
-    $ofile.print("    \},\n");
+    $ofile.print("    \}\},\n");
 }
 
 $ofile.print("\};");

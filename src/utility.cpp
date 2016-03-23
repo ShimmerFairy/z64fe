@@ -6,6 +6,8 @@
 
 #include "utility.hpp"
 
+#include <QString>
+
 #include <sstream>
 
 std::string sizeToIEC(size_t inbytes) {
@@ -54,4 +56,10 @@ std::string sizeToIEC(size_t inbytes) {
     }
 
     return res.str();
+}
+
+std::string code_to_utf8(uint32_t codep) {
+    // currently the lazy way, maybe want our own solution sometime??
+
+    return QString(QChar(codep)).toStdString();
 }
