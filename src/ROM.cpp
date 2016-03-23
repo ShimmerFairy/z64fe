@@ -374,7 +374,11 @@ namespace ROM {
     }
 
     size_t ROM::sizeMsgTbl() const {
-        return text_ids.begin()->second.size();
+        if (text_ids.size() > 0) {
+            return text_ids.begin()->second.size();
+        } else {
+            return 0;
+        }
     }
 
     std::string ROM::langStrMsgTbl() const {

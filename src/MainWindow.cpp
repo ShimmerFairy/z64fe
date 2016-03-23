@@ -299,6 +299,10 @@ void MainWindow::analyzeTextTbl() {
 }
 
 void MainWindow::openTextViewer() {
+    if (the_rom.sizeMsgTbl() == 0) {
+        analyzeTextTbl();
+    }
+
     TextViewer * newview = new TextViewer(the_rom);
 
     connect(newview, &TextViewer::destroyed, this, &MainWindow::rmWindow);
