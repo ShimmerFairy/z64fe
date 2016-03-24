@@ -10,11 +10,11 @@
 void MainWindow::guiMakeMenu() {
     fileMenu = menuBar()->addMenu(tr("&File"));
 
-    actOpen = new QAction(QIcon::fromTheme("document-open"), tr("&Open ROM..."), this);
+    actOpen = new QAction(QIcon::fromTheme("document-open", QIcon(":/icons/document-open.svg")), tr("&Open ROM..."), this);
     actOpen->setShortcuts(QKeySequence::Open);
     actOpen->setStatusTip(tr("Open an Ocarina of Time or Majora's Mask ROM."));
 
-    actQuit = new QAction(QIcon::fromTheme("application-exit"), tr("&Quit"), this);
+    actQuit = new QAction(QIcon::fromTheme("application-exit", QIcon(":/icons/application-exit.svg")), tr("&Quit"), this);
     actQuit->setShortcuts(QKeySequence::Quit);
     actQuit->setStatusTip(tr("Exit this program."));
 
@@ -186,7 +186,7 @@ void MainWindow::guiIntroScreen() {
     introsublbl->setFont(fntb);
     introsublbl->setAlignment(Qt::AlignCenter);
 
-    introload = new QPushButton(QIcon::fromTheme("document-open"), tr("Open ROM..."));
+    introload = new QPushButton(QIcon::fromTheme("document-open", QIcon(":/icons/document-open.svg")), tr("Open ROM..."));
     connect(introload, &QPushButton::clicked, this, &MainWindow::openROM);
 
     introqvb = new QVBoxLayout;

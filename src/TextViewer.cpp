@@ -18,6 +18,8 @@
 #include <iostream>
 
 TextViewer::TextViewer(ROM::ROM & r) : trom(&r) {
+    setAttribute(Qt::WA_DeleteOnClose);
+
     idlist = new QTreeView;
     idmod = new TextIDModel(trom->msgTbl());
     msgview = new QTextEdit;
@@ -26,6 +28,8 @@ TextViewer::TextViewer(ROM::ROM & r) : trom(&r) {
 
     idlist->setModel(idmod);
     idlist->setSelectionMode(QAbstractItemView::SingleSelection);
+
+    msgview->setReadOnly(true);
 
     qhb->addWidget(idlist);
     qhb->addWidget(msgview);

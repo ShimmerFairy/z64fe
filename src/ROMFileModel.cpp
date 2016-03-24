@@ -46,7 +46,7 @@ QVariant ROMFileModel::data(const QModelIndex & index, int role) const {
     } else if (role == Qt::DecorationRole) {
         if (index.column() == 0) {
             if (data_src->recordAt(index.row()).isCompressed()) {
-                return QIcon::fromTheme("package-x-generic");
+                return QIcon::fromTheme("package-x-generic", QIcon(":/icons/package-x-generic.svg"));
             } else if (data_src->recordAt(index.row()).isMissing()) {
                 return QIcon(":/icons/application-missing.svg");
             }
