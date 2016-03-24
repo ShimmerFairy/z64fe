@@ -15,6 +15,8 @@ int main(int argc, char ** argv) {
     QCoreApplication::setApplicationName("Z64Fe");
     QCoreApplication::setApplicationVersion("0.0.0");
 
+    QApplication::setWindowIcon(QIcon(":/appicon.svg"));
+
     MainWindow mw;
 
     mw.show();

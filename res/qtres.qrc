@@ -2,5 +2,6 @@
 <RCC version="1.0">
   <qresource>
     <file>icons/application-missing.svg</file>
+    <file>appicon.svg</file>
   </qresource>
 </RCC>
