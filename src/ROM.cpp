@@ -243,6 +243,10 @@ namespace ROM {
     }
 
     bool ROM::hasConfigKey(std::initializer_list<std::string> parts) const {
+        if (ctree.isEmpty()) {
+            return false;
+        }
+
         try {
             ctree.getValue(parts);
             return true;

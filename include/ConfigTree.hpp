@@ -61,7 +61,7 @@ class ConfigTree {
     ConfigTree & operator=(ConfigTree && movect);
     ~ConfigTree();
 
-    bool isEmpty();
+    bool isEmpty() const;
 
     std::string getValue(std::string toplvl) const;
     std::string getValue(std::initializer_list<std::string> vp) const;

@@ -26,6 +26,21 @@ MainWindow::MainWindow() {
 }
 
 void MainWindow::openROM() {
+
+    if (childWindows.size() > 0) {
+        if (QMessageBox::question(this, tr("Open windows remaining"),
+                                  tr("Some windows working on the current ROM are still open. Would you like to close them and choose a new ROM?"))
+            == QMessageBox::No) {
+            return;
+        } else {
+            for (auto & i : childWindows) {
+                delete i;
+            }
+
+            childWindows.clear();
+        }
+    }
+
     QSettings qs;
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open ROM"),
                                                     qs.value("main/lastfile", QString()).toString(),

@@ -241,7 +241,7 @@ ConfigTree::~ConfigTree() {
     delete rootNode;
 }
 
-bool ConfigTree::isEmpty() { return rootNode == nullptr; }
+bool ConfigTree::isEmpty() const { return rootNode == nullptr; }
 
 std::string ConfigTree::getValue(std::string toplvl) const {
     ConfigTreeNode * respair = rootNode->childMatchKey(toplvl);
