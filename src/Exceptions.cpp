@@ -6,6 +6,9 @@
 
 #include "Exceptions.hpp"
 
+#include <sstream>
+#include <iomanip>
+
 std::string Exception::what() {
     return "Some kind of general exception. Not only was there an error, someone didn't even use a specific one! Now you've got two problems.";
 }
@@ -67,6 +70,36 @@ namespace X {
 
         std::string Decompress::what() {
             return "Error in decompressing file: " + reason;
+        }
+    }
+
+    namespace Text {
+        BadSequence::BadSequence(std::initializer_list<uint8_t> bs, std::string optr) : badseq(bs),
+                                                                                        optreason(optr) { }
+        std::string BadSequence::what() {
+            std::stringstream r;
+
+            r << "Error in decoding text: bad sequence ["
+              << std::hex << std::uppercase << std::setfill('0');
+
+            size_t idx = 0;
+            for (auto & i : badseq) {
+                r << std::setw(2) << i;
+
+                if (++idx < badseq.size()) {
+                    r << " ";
+                }
+            }
+
+            r << "]";
+
+            if (optreason != "") {
+                r << " (" << optreason << ")";
+            }
+
+            r << ".";
+
+            return r.str();
         }
     }
 }

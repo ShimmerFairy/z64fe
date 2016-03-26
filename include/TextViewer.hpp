@@ -9,6 +9,7 @@
 #include "ROM.hpp"
 #include "Config.hpp"
 #include "TextIDModel.hpp"
+#include "TextAST.hpp"
 
 #include <QMainWindow>
 #include <QTreeView>
@@ -23,6 +24,8 @@ class TextViewer : public QMainWindow {
   private:
     ROM::ROM * trom;
 
+    std::vector<TextAST> readtxt;
+
     QTreeView * idlist;
     TextIDModel * idmod;
 
@@ -30,9 +33,6 @@ class TextViewer : public QMainWindow {
     QHBoxLayout * qhb;
 
     QWidget * dummy;
-
-    std::string transASCII(std::vector<uint8_t>::iterator & takethis, bool & cont);
-    std::string transSJIS(std::vector<uint8_t>::iterator & takethis, bool & cont);
 
   private slots:
     void chooseText(const QModelIndex & sel, const QModelIndex & desel);

@@ -7,6 +7,9 @@
 #pragma once
 
 #include <string>
+#include <cstdint>
+#include <vector>
+#include <initializer_list>
 
 class Exception {
   public:
@@ -116,6 +119,19 @@ namespace X {
 
           public:
             Decompress(std::string r);
+
+            std::string what();
+        };
+    }
+
+    namespace Text {
+        class BadSequence : public Exception {
+          private:
+            std::vector<uint8_t> badseq;
+            std::string optreason;
+
+          public:
+            BadSequence(std::initializer_list<uint8_t> bs, std::string optr = "");
 
             std::string what();
         };
