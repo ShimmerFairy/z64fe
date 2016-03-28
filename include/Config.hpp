@@ -53,6 +53,7 @@ namespace Config {
         EN,
         DE,
         FR,
+        ES,
     };
 
     std::string langString(Language L);

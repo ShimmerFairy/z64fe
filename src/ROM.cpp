@@ -116,8 +116,12 @@ namespace ROM {
             rr.pend   = be_u32(i); i += 4;
 
             if (canName) {
-                rr.fname = ctree.findKey({"fileList"}, QString("0x%1").arg(
-                                             QString("%1").arg(rr.vstart, 8, 16, QChar('0')).toUpper()).toStdString());
+                try {
+                    rr.fname = ctree.findKey({"fileList"}, QString("0x%1").arg(
+                                                 QString("%1").arg(rr.vstart, 8, 16, QChar('0')).toUpper()).toStdString());
+                } catch (...) {
+                    rr.fname = "";
+                }
             } else {
                 rr.fname = "";
             }
@@ -163,7 +167,11 @@ namespace ROM {
             throw X::NoConfig("Finding files by name");
         }
 
-        return fileAtVAddr(std::stoul(ctree.getValue({"fileList", name}), nullptr, 0));
+        try {
+            return fileAtVAddr(std::stoul(ctree.getValue({"fileList", name}), nullptr, 0));
+        } catch (...) {
+            return fileAtVAddr(std::stoul(ctree.getValue({"fileList", "fakeNames", name}), nullptr, 0));
+        }
     }
 
     Record ROM::recordAt(size_t idx) const { return fileList.at(idx); }
@@ -256,21 +264,30 @@ namespace ROM {
         }
     }
 
-    void ROM::analyzeMsgTbl() {
-        std::vector<uint8_t> codefile;
-        File cf = fileAtName("code");
-
-        if (cf.record().isCompressed()) {
-            cf = cf.decompress();
+    std::string ROM::configKey(std::initializer_list<std::string> parts) const {
+        if (!hasConfigKey(parts)) {
+            return "";
         }
 
-        codefile = cf.getData();
+        return ctree.getValue(parts);
+    }
 
-        size_t msgoff = std::stoul(ctree.getValue({"codeData", "TextMsgTable"}), nullptr, 0);
-
-        auto iter = codefile.begin() + msgoff;
-
+    void ROM::analyzeMsgTbl() {
         if (Config::getGame(rver) == Config::Game::Ocarina) {
+            std::vector<uint8_t> codefile;
+            File cf = fileAtName("code");
+
+            if (cf.record().isCompressed()) {
+                cf = cf.decompress();
+            }
+
+            codefile = cf.getData();
+
+            size_t msgoff = std::stoul(ctree.getValue({"codeData", "TextMsgTable"}), nullptr, 0);
+
+            auto iter = codefile.begin() + msgoff;
+
+
             if (Config::getRegion(rver) == Config::Region::NTSC) {
                 // get japanese, then ID 0xFFFF, then english, then ID 0xFFFF
 
@@ -371,7 +388,38 @@ namespace ROM {
                 throw X::InternalError("Somehow got an impossible region for Ocarina of Time.");
             }
         } else if (Config::getGame(rver) == Config::Game::Majora) {
-            throw X::NYI("support for Majora's mask text");
+            if (Config::getRegion(rver) == Config::Region::EU) {
+                // for european MM roms, the addresses are in separate files,
+                // which thankfully makes this easy
+
+                // the given files should never be compressed, for a
+                // well-behaved rom, so we'll assume they aren't.
+                std::vector<uint8_t> curfile = fileAtName("nes_message_table").getData();
+
+                for (auto i = curfile.begin(); i != curfile.end(); i += 8) {
+                    text_ids[Config::Language::EN][be_u16(i)] = be_u32(i + 4) & 0x00FFFFFF;
+                }
+
+                curfile = fileAtName("ger_message_table").getData();
+
+                for (auto i = curfile.begin(); i != curfile.end(); i += 8) {
+                    text_ids[Config::Language::DE][be_u16(i)] = be_u32(i + 4) & 0x00FFFFFF;
+                }
+
+                curfile = fileAtName("fra_message_table").getData();
+
+                for (auto i = curfile.begin(); i != curfile.end(); i += 8) {
+                    text_ids[Config::Language::FR][be_u16(i)] = be_u32(i + 4) & 0x00FFFFFF;
+                }
+
+                curfile = fileAtName("esp_message_table").getData();
+
+                for (auto i = curfile.begin(); i != curfile.end(); i += 8) {
+                    text_ids[Config::Language::ES][be_u16(i)] = be_u32(i + 4) & 0x00FFFFFF;
+                }
+            } else {
+                throw X::NYI("grep");
+            }
         } else {
             throw X::InternalError("Somehow got an impossible game from the version info (did this section get missed in some big changes?).");
         }

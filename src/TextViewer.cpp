@@ -72,6 +72,10 @@ void TextViewer::chooseText(const QModelIndex & sel, const QModelIndex & /*desel
               case Config::Language::FR:
                 msgfile = trom->fileAtName("fra_message_data_static");
                 break;
+
+              case Config::Language::ES:
+                msgfile = trom->fileAtName("esp_message_data_static");
+                break;
             }
         } catch (Exception & e) {
             QMessageBox::critical(this, tr("ERROR!"),
@@ -85,10 +89,14 @@ void TextViewer::chooseText(const QModelIndex & sel, const QModelIndex & /*desel
 
         std::stringstream res;
 
-        if (lang == Config::Language::JP) {
-            readtxt = readShiftJIS_OoT(readptr);
+        if (Config::getGame(trom->getVersion()) == Config::Game::Ocarina) {
+            if (lang == Config::Language::JP) {
+                readtxt = readShiftJIS_OoT(readptr);
+            } else {
+                readtxt = readASCII_OoT(readptr);
+            }
         } else {
-            readtxt = readASCII_OoT(readptr);
+            readtxt = readASCII_MM(readptr);
         }
 
         for (auto & i : readtxt) {

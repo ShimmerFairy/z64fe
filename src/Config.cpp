@@ -202,6 +202,10 @@ namespace Config {
           case Language::FR:
             return "French";
             break;
+
+          case Language::ES:
+            return "Spanish";
+            break;
         }
     }
 }

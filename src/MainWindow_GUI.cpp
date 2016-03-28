@@ -238,13 +238,8 @@ void MainWindow::guiNewROM_TextTab() {
     tNumberValue->setText("--");
     tLangsValue->setText("--");
 
-    if (Config::getGame(the_rom.getVersion()) == Config::Game::Majora) {
-        tReadTbl->setEnabled(false);
-        tSeeText->setEnabled(false);
-
-        tReadTbl->setText(tr("Majora's mask text NYI"));
-        tSeeText->setText(tr("Majora's mask text NYI"));
-    } else if (!the_rom.hasConfigKey({"codeData", "TextMsgTable"})) {
+    if (!the_rom.hasConfigKey({"codeData", "TextMsgTable"})
+     && the_rom.configKey({"quirks", "mm_eu_msg_point_outside"}) != "true") {
         tReadTbl->setEnabled(false);
         tSeeText->setEnabled(false);
 

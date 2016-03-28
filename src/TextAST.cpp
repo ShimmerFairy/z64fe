@@ -61,6 +61,14 @@ std::string TextAST::codeString() const {
           case Color::Black:
             r << "\\color{black}";
             break;
+
+          case Color::Gray:
+            r << "\\color{gray}";
+            break;
+
+          case Color::Orange:
+            r << "\\color{orange}";
+            break;
         }
         break;
 
@@ -229,6 +237,170 @@ std::string TextAST::codeString() const {
             r << "\\Dpad{}";
             break;
         }
+        break;
+
+      case Type::SwampArchHits:
+        r << "\\archerySwampHitsNeeded{}";
+        break;
+
+      case Type::NumFairiesGot:
+        r << "\\fairiesGotInThisDungeon{}";
+        break;
+
+      case Type::CarriageReturn:
+        r << "\\x{0D}";
+        break;
+
+      case Type::NoSkipping_withSfx:
+        r << "\\CantSkipNow[SFX]{}";
+        break;
+
+      case Type::DelayThenPrint:
+        r << "\\waitXFramesThenPrint{" << val << "}";
+        break;
+
+      case Type::StayAfter:
+        r << "\\lingerXFramesOnBox{" << val << "}";
+        break;
+
+      case Type::DelayThenEndText:
+        r << "\\waitXFramesThenEndText{" << val << "}";
+        break;
+
+      case Type::FailedSongX:
+        r << "\\failedSongIndicator{}";
+        break;
+
+      case Type::PostmanGameTime:
+        r << "\\showTimePostmanGame{}";
+        break;
+
+      case Type::TimeLeftInFight:
+        r << "\\timeLeftInSkullkidFight{}";
+        break;
+
+      case Type::DekuFlowerGameScore:
+        r << "\\dekuFlowerGameScore{}";
+        break;
+
+      case Type::ShootingGalleryScore:
+        r << "\\shootingGalleryScore{}";
+        break;
+
+      case Type::BankRupeePrompt:
+        r << "\\bankPromptRupees{}";
+        break;
+
+      case Type::ShowRupeesGiven:
+        r << "\\showRupeesGiven{}";
+        break;
+
+      case Type::ShowRupeesEarned:
+        r << "\\showRupeesEarned{}";
+        break;
+
+      case Type::LotteryRupeePrompt:
+        r << "\\lotteryPromptRupees{}";
+        break;
+
+      case Type::BomberCodePrompt:
+        r << "\\bombersPromptCode{}";
+        break;
+
+      case Type::WaitOnItem:
+        r << "\\waitForAnyItem{}";
+        break;
+
+      case Type::SoaringDestination:
+        r << "\\songSoaringDest{}";
+        break;
+
+      case Type::LotteryGuessPrompt:
+        r << "\\lotteryPromptGuess{}";
+        break;
+
+      case Type::OceanSpiderMaskOrder:
+        r << "\\showOceanSpiderMaskOrder{}";
+        break;
+
+      case Type::FairiesLeftIn:
+        r << "\\fairiesLeftAt{";
+
+        switch (val) {
+          case 1:
+            r << "Woodfall";
+            break;
+
+          case 2:
+            r << "Snowhead";
+            break;
+
+          case 3:
+            r << "Great Bay";
+            break;
+
+          case 4:
+            r << "Stone Tower";
+            break;
+
+          default:
+            r << "UNKNOWN!!! " << val;
+            break;
+        }
+
+        r << "}";
+        break;
+
+      case Type::SwampArchScore:
+        r << "\\archerySwampScore{}";
+        break;
+
+      case Type::ShowLotteryNumber:
+        r << "\\lotteryCorrectAnswer{}";
+        break;
+
+      case Type::ShowLotteryGuess:
+        r << "\\lotteryPlayerAnswer{}";
+        break;
+
+      case Type::MonetaryValue:
+        r << "\\showValueOfItem{}";
+        break;
+
+      case Type::ShowBomberCode:
+        r << "\\showBomberCode{}";
+        break;
+
+      case Type::EndConversation:
+        r << "\\endConversation{}";
+        break;
+
+      case Type::ShowMaskColor:
+        r << "\\showColorOfOceanSpiderMask{" << val << "}";
+        break;
+
+      case Type::HoursLeft:
+        r << "\\hoursRemaining{}";
+        break;
+
+      case Type::TimeToMorning:
+        r << "\\timeUntilMorning{}";
+        break;
+
+      case Type::OctoArchHiscore:
+        r << "\\archeryOctoHiscore{}";
+        break;
+
+      case Type::BeanPrice:
+        r << "\\priceOfBean{}";
+        break;
+
+      case Type::EponaArchHiscore:
+        r << "\\archeryEponaHiscore{}";
+        break;
+
+      case Type::DekuFlowerGameDailyHiscore:
+        r << "\\dekuFlowerGameHiscoreOnDay{" << val << "}";
         break;
     }
 

@@ -94,6 +94,8 @@ namespace ROM {
 
         bool hasConfigKey(std::initializer_list<std::string> parts) const;
 
+        std::string configKey(std::initializer_list<std::string> parts) const;
+
         void analyzeMsgTbl();
         size_t sizeMsgTbl() const;
         std::string langStrMsgTbl() const;

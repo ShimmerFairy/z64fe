@@ -10,6 +10,8 @@
 #include <QScrollBar>
 #include <QSettings>
 #include <QFontMetrics>
+#include <QFileDialog>
+#include <QMessageBox>
 
 HexFileModel::HexFileModel(ROM::File mf) : myfile(mf) { }
 
@@ -127,7 +129,7 @@ QVariant HexFileTextModel::data(const QModelIndex & idx, int role) const {
     }
 }
 
-HexViewer::HexViewer(ROM::File mf) : hfm(mf), hftm(mf) {
+HexViewer::HexViewer(ROM::File mf) : hfm(mf), hftm(mf), fcopy(mf) {
     setAttribute(Qt::WA_DeleteOnClose);
     setWindowTitle(QString("File %1-%2")
                    .arg(QString("%1").arg(mf.record().vstart, 8, 16, QChar('0')).toUpper())
@@ -178,11 +180,6 @@ HexViewer::HexViewer(ROM::File mf) : hfm(mf), hftm(mf) {
     hexside.setAlternatingRowColors(true);
     txtside.setAlternatingRowColors(true);
 
-//    hexside.resizeColumnsToContents();
-//    hexside.resizeRowsToContents();
-//    txtside.resizeColumnsToContents();
-//    txtside.resizeRowsToContents();
-
     dumwidg = new QWidget;
     hbl = new QHBoxLayout(dumwidg);
 
@@ -195,12 +192,46 @@ HexViewer::HexViewer(ROM::File mf) : hfm(mf), hftm(mf) {
 
     // set up the menu
 
+    fileMenu = menuBar()->addMenu(tr("&File"));
+
+    saveItem = fileMenu->addAction(tr("&Save this file..."));
+    fileMenu->addAction(saveItem);
+
     toolsMenu = menuBar()->addMenu(tr("&Tools"));
 
     optionsItem = toolsMenu->addAction(tr("&Options..."));
     toolsMenu->addAction(optionsItem);
 
+    connect(saveItem, &QAction::triggered, this, &HexViewer::saveFile);
     connect(optionsItem, &QAction::triggered, this, &HexViewer::doOptions);
+}
+
+void HexViewer::saveFile() {
+    QSettings qs;
+    QString defName = qs.value("hexview/lastfile", QString()).toString();
+
+    QString saveTo = QFileDialog::getSaveFileName(this, tr("Save File"),
+                                                  defName,
+                                                  tr("Zelda 64 files, unspecified (*.zdata);;All files (*)"));
+
+    std::string savname = saveTo.toStdString();
+
+    std::ofstream ofile(savname, std::ios_base::binary);
+
+    if (!ofile) {
+        QMessageBox::critical(this, "Z64Fe",
+                              tr("Can't open %1 for saving. Not saving.").arg(savname.c_str()));
+        return;
+    }
+
+    std::vector<uint8_t> filedata = fcopy.getData();
+
+    ofile.write(reinterpret_cast<char*>(filedata.data()), filedata.size());
+
+    if (!ofile) {
+        QMessageBox::warning(this, "Z64Fe",
+                             tr("Error occurred while writing file. Written file may not be complete."));
+    }
 }
 
 void HexViewer::doOptions() {

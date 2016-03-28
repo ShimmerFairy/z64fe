@@ -13,3 +13,6 @@
 
 std::vector<TextAST> readASCII_OoT(std::vector<uint8_t>::iterator & indata);
 std::vector<TextAST> readShiftJIS_OoT(std::vector<uint8_t>::iterator & indata);
+
+std::vector<TextAST> readASCII_MM(std::vector<uint8_t>::iterator & indata);
+std::vector<TextAST> readShiftJIS_MM(std::vector<uint8_t>::iterator & indata);

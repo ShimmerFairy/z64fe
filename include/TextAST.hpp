@@ -43,6 +43,42 @@ class TextAST {
         Highscore,
         WorldTime,
         Button,
+        // MM-only types
+        SwampArchHits,
+        NumFairiesGot,
+        CarriageReturn,
+        NoSkipping_withSfx,
+        DelayThenPrint,
+        StayAfter,
+        DelayThenEndText,
+        FailedSongX,
+        PostmanGameTime,
+        TimeLeftInFight,
+        DekuFlowerGameScore,
+        ShootingGalleryScore,
+        BankRupeePrompt,
+        ShowRupeesGiven,
+        ShowRupeesEarned,
+        LotteryRupeePrompt,
+        BomberCodePrompt,
+        WaitOnItem,
+        SoaringDestination,
+        LotteryGuessPrompt,
+        OceanSpiderMaskOrder,
+        FairiesLeftIn, // XXX want enum for this one's values?
+        SwampArchScore,
+        ShowLotteryNumber,
+        ShowLotteryGuess,
+        MonetaryValue,
+        ShowBomberCode,
+        EndConversation,
+        ShowMaskColor,
+        HoursLeft,
+        TimeToMorning,
+        OctoArchHiscore,
+        BeanPrice,
+        EponaArchHiscore,
+        DekuFlowerGameDailyHiscore,
     };
 
     enum class Color {
@@ -54,6 +90,8 @@ class TextAST {
         Magenta,
         Yellow,
         Black,
+        Gray,
+        Orange,
     };
 
     enum class Button {

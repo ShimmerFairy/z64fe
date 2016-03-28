@@ -112,6 +112,8 @@ class HexFileTextModel : public HexFileModel {
 
 class HexViewer : public QMainWindow {
   private:
+    ROM::File fcopy;
+
     HexFileModel hfm;
     HexFileTextModel hftm;
     QTableView hexside;
@@ -121,11 +123,15 @@ class HexViewer : public QMainWindow {
 
     QWidget * dumwidg;
 
+    QMenu * fileMenu;
+    QAction * saveItem;
+
     QMenu * toolsMenu;
     QAction * optionsItem;
 
   private slots:
     void doOptions();
+    void saveFile();
 
   public:
     HexViewer(ROM::File mf);
