@@ -332,3 +332,12 @@ void MainWindow::rmWindow(QObject * item) {
         childWindows.erase(pntat);
     }
 }
+
+
+void MainWindow::close() {
+    for (auto & i : childWindows) {
+        delete i;
+    }
+
+    QMainWindow::close();
+}

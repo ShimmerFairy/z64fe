@@ -136,6 +136,9 @@ class MainWindow : public QMainWindow {
 
     void rmWindow(QObject * item);
 
+  public slots:
+    void close();
+
   public:
     MainWindow();
 };
