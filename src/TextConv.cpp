@@ -1061,3 +1061,391 @@ std::vector<TextAST> readASCII_MM(std::vector<uint8_t>::iterator & indata) {
 
     return the_list;
 }
+
+std::vector<TextAST> readShiftJIS_MM(std::vector<uint8_t>::iterator & indata) {
+    // note that MM Shift-JIS in particular seems to thrive on being a modified
+    // Shift-JIS with a constant two-byte format (its space character is 0020
+    // instead of 20, for example). However, we'll still assume normal,
+    // variable-width Shift-JIS as a fallback unless and until it's proven
+    // beyond a doubt that this a weird two-byte variant.
+    //
+    // TODO: look more closely into the other, non-shift JIS standards, see if
+    // they explain it.
+
+    std::vector<TextAST> the_list;
+    bool cont = true;
+
+    auto addlit = [&](std::string piece) {
+        if (the_list.size() == 0 || !the_list.back().literalAddText(piece)) {
+            the_list.emplace_back(piece);
+        }
+    };
+
+    // first, ignore currently-unimportant header
+    indata += 12;
+
+    while (cont) {
+        // readability vars
+        uint8_t first, second, third, fourth;
+
+        first = *indata++;
+
+        switch (first) {
+          case 0x20:
+            second = *indata++;
+
+            switch (second) {
+              case 0x00:
+                the_list.emplace_back(TextAST::Color::White);
+                break;
+
+              case 0x01:
+                the_list.emplace_back(TextAST::Color::Red);
+                break;
+
+              case 0x02:
+                the_list.emplace_back(TextAST::Color::Green);
+                break;
+
+              case 0x03:
+                the_list.emplace_back(TextAST::Color::Blue);
+                break;
+
+              case 0x04:
+                the_list.emplace_back(TextAST::Color::Yellow);
+                break;
+
+              case 0x05:
+                the_list.emplace_back(TextAST::Color::Cyan);
+                break;
+
+              case 0x06:
+                the_list.emplace_back(TextAST::Color::Magenta);
+                break;
+
+              case 0x07:
+                the_list.emplace_back(TextAST::Color::Gray);
+                break;
+
+              case 0x08:
+                the_list.emplace_back(TextAST::Color::Orange);
+                break;
+
+              default:
+                // we'll take it as the space standard Shift-JIS says it
+                // is. We'll also give back the second byte, since it's not ours
+                // it turns out.
+                addlit(" ");
+                indata--;
+                break;
+            }
+            break;
+
+          case 0x00:
+            second = *indata++;
+
+            switch (second) {
+              case 0x1F:
+                third = *indata++;
+
+                if (third == 0x00) {
+                    fourth = *indata++;
+
+                    the_list.emplace_back(TextAST::Type::Multispace, fourth);
+                } else {
+                    throw X::Text::BadSequence({first, second, third});
+                }
+                break;
+
+              case 0x09:
+              case 0x0B: // XXX not the same?
+                the_list.emplace_back(TextAST::Type::NewBox);
+                break;
+
+              case 0x0A:
+                addlit("\n");
+                break;
+
+              case 0x0C:
+                the_list.emplace_back(TextAST::Type::CarriageReturn);
+                break;
+
+              case 0x20:
+                addlit(" "); // MM shift-jis is weird
+                break;
+
+              default:
+                // give as null, and give back second
+                addlit("\0");
+                indata--;
+                break;
+            }
+            break;
+
+          case 0x02:
+            second = *indata++;
+
+            switch (second) {
+              case 0x1C:
+                the_list.emplace_back(TextAST::Type::NumFairiesGot);
+                break;
+
+              case 0x1D:
+                // XXX want different type (see in ASCII)
+                the_list.emplace_back(TextAST::Type::NumGoldSkulls);
+                break;
+
+              case 0x40:
+                the_list.emplace_back(TextAST::Type::NoSkipping);
+                break;
+
+              case 0x01:
+                the_list.emplace_back(TextAST::Type::FailedSongX);
+                break;
+
+              case 0x02:
+                the_list.emplace_back(TextAST::Type::TwoChoices);
+                break;
+
+              case 0x03:
+                the_list.emplace_back(TextAST::Type::ThreeChoices);
+                break;
+
+              case 0x04:
+                the_list.emplace_back(TextAST::Type::PostmanGameTime);
+                break;
+
+              case 0x07:
+                the_list.emplace_back(TextAST::Type::TimeLeftInFight);
+                break;
+
+              case 0x08:
+                the_list.emplace_back(TextAST::Type::DekuFlowerGameScore);
+                break;
+
+              case 0x0B:
+                the_list.emplace_back(TextAST::Type::ShootingGalleryScore);
+                break;
+
+              case 0x0C:
+                the_list.emplace_back(TextAST::Type::BankRupeePrompt);
+                break;
+
+              case 0x0D:
+                the_list.emplace_back(TextAST::Type::ShowRupeesGiven);
+                break;
+
+              case 0x0E:
+                the_list.emplace_back(TextAST::Type::ShowRupeesEarned);
+                break;
+
+              case 0x0F:
+                // XXX separate type?
+                the_list.emplace_back(TextAST::Type::WorldTime);
+                break;
+
+              case 0x20:
+                the_list.emplace_back(TextAST::Type::LotteryRupeePrompt);
+                break;
+
+              case 0x21:
+                the_list.emplace_back(TextAST::Type::BomberCodePrompt);
+                break;
+
+              case 0x22:
+                the_list.emplace_back(TextAST::Type::WaitOnItem);
+                break;
+
+              case 0x24:
+                the_list.emplace_back(TextAST::Type::SoaringDestination);
+                break;
+
+              case 0x25:
+                the_list.emplace_back(TextAST::Type::LotteryGuessPrompt);
+                break;
+
+              case 0x26:
+                the_list.emplace_back(TextAST::Type::OceanSpiderMaskOrder);
+                break;
+
+              case 0x27:
+              case 0x28:
+              case 0x29:
+              case 0x2A:
+                the_list.emplace_back(TextAST::Type::FairiesLeftIn, second - 0x26);
+                break;
+
+              case 0x2B:
+                the_list.emplace_back(TextAST::Type::SwampArchScore);
+                break;
+
+              case 0x2C:
+                the_list.emplace_back(TextAST::Type::ShowLotteryNumber);
+                break;
+
+              case 0x2D:
+                the_list.emplace_back(TextAST::Type::ShowLotteryGuess);
+                break;
+
+              case 0x2E:
+                the_list.emplace_back(TextAST::Type::MonetaryValue);
+                break;
+
+              case 0x2F:
+                the_list.emplace_back(TextAST::Type::ShowBomberCode);
+                break;
+
+              case 0x30:
+                the_list.emplace_back(TextAST::Type::EndConversation);
+                break;
+
+              case 0x31:
+              case 0x32:
+              case 0x33:
+              case 0x34:
+              case 0x35:
+              case 0x36:
+                the_list.emplace_back(TextAST::Type::ShowMaskColor, second & 0x0F);
+                break;
+
+              case 0x37:
+                the_list.emplace_back(TextAST::Type::HoursLeft);
+                break;
+
+              case 0x38:
+                the_list.emplace_back(TextAST::Type::TimeToMorning);
+                break;
+
+              default:
+                // interpret as standard 0x02, give back second
+                addlit("\x02");
+                indata--;
+                break;
+            }
+            break;
+
+          case 0x01:
+            second = *indata++;
+
+            switch (second) {
+              case 0x00:
+                the_list.emplace_back(TextAST::Type::PlayerName);
+                break;
+
+              case 0x01:
+                the_list.emplace_back(TextAST::Type::InstantTextState, true);
+                break;
+
+              case 0x02:
+                the_list.emplace_back(TextAST::Type::InstantTextState, false);
+                break;
+
+              case 0x03:
+                the_list.emplace_back(TextAST::Type::NoSkipping_withSfx);
+                break;
+
+              case 0x04:
+                the_list.emplace_back(TextAST::Type::StayOpen);
+                break;
+
+              case 0x10:
+                the_list.emplace_back(TextAST::Type::DelayThenPrint, be_u16(indata));
+                indata += 2;
+                break;
+
+              case 0x11:
+                the_list.emplace_back(TextAST::Type::StayAfter, be_u16(indata));
+                indata += 2;
+                break;
+
+              case 0x12:
+                the_list.emplace_back(TextAST::Type::DelayThenEndText, be_u16(indata));
+                indata += 2;
+                break;
+
+              case 0x20:
+                the_list.emplace_back(TextAST::Type::PlaySFX, be_u16(indata));
+                indata += 2;
+                break;
+
+              case 0x28:
+                // XXX for sure regular delay?
+                the_list.emplace_back(TextAST::Type::Delay, be_u16(indata));
+                indata += 2;
+                break;
+
+              case 0x35:
+                // definitely not same as OoT trigger... maybe?
+                the_list.emplace_back(TextAST::Type::UnknownTrigger);
+                break;
+
+              default:
+                // literal 0x01, give back second
+                addlit("\x01");
+                indata--;
+                break;
+            }
+            break;
+
+          case 0x05:
+            second = *indata++;
+
+            if (second == 0x00) {
+                the_list.emplace_back(TextAST::Type::EndMessage);
+                cont = false;
+            } else {
+                // give back second, literal 0x05
+                addlit("\x05");
+                indata--;
+            }
+            break;
+
+          case 0x03:
+            second = *indata++;
+
+            switch (second) {
+              case 0x06:
+                the_list.emplace_back(TextAST::Type::OctoArchHiscore);
+                break;
+
+              case 0x09:
+              case 0x07: // XXX seems to be the same, but not sure
+                the_list.emplace_back(TextAST::Type::EponaArchHiscore);
+                break;
+
+              case 0x0A:
+              case 0x0B:
+              case 0x0C:
+                the_list.emplace_back(TextAST::Type::DekuFlowerGameDailyHiscore, second - 0x09);
+                break;
+
+              default:
+                // literal 0x03, give back second
+                addlit("\x03");
+                indata--;
+                break;
+            }
+            break;
+
+          default:
+            // non-control values, try double-byte then single-byte
+            if (SJIS_doubleTable.count(first) == 1) {
+                // 2-byte value
+
+                second = *indata++;
+
+                addlit(code_to_utf8(SJIS_doubleTable.at(first).at(second)));
+            } else if (SJIS_singleTable.count(first) == 1) {
+                // 1-byte with special mapping
+
+                addlit(code_to_utf8(SJIS_singleTable.at(first)));
+            } else {
+                // 1-byte that's not special from ASCII
+                addlit(std::string(1, first));
+            }
+            break;
+        }
+    }
+
+    return the_list;
+}

@@ -227,7 +227,7 @@ namespace ROM {
             rver = Config::Version::OOT_PAL_1_1;
         } else if (compileString == "03-02-21 00:16:31") {
             rver = Config::Version::OOT_MQ_DEBUG;
-        } else if (compileString == "00-03-31 02:22:21") {
+        } else if (compileString == "00-03-31 02:22:11") {
             rver = Config::Version::MM_JP_1_0;
         } else if (compileString == "00-04-04 09:34:16") {
             rver = Config::Version::MM_JP_1_1;
@@ -418,7 +418,33 @@ namespace ROM {
                     text_ids[Config::Language::ES][be_u16(i)] = be_u32(i + 4) & 0x00FFFFFF;
                 }
             } else {
-                throw X::NYI("grep");
+                std::vector<uint8_t> codefile;
+                File cf = fileAtName("code");
+
+                if (cf.record().isCompressed()) {
+                    cf = cf.decompress();
+                }
+
+                codefile = cf.getData();
+
+                size_t msgoff = std::stoul(ctree.getValue({"codeData", "TextMsgTable"}), nullptr, 0);
+
+                auto iter = codefile.begin() + msgoff;
+
+                Config::Language whatlang;
+
+                if (Config::getRegion(rver) == Config::Region::JP) {
+                    whatlang = Config::Language::JP;
+                } else if (Config::getRegion(rver) == Config::Region::US) {
+                    whatlang = Config::Language::EN;
+                } else {
+                    throw X::InternalError("Impossible region obtained for Majora's Mask game.");
+                }
+
+                while (be_u16(iter) != 0xFFFF) {
+                    text_ids[whatlang][be_u16(iter)] = be_u32(iter + 4) & 0x00FFFFFF;
+                    iter += 8;
+                }
             }
         } else {
             throw X::InternalError("Somehow got an impossible game from the version info (did this section get missed in some big changes?).");

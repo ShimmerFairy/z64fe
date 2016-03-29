@@ -96,7 +96,11 @@ void TextViewer::chooseText(const QModelIndex & sel, const QModelIndex & /*desel
                 readtxt = readASCII_OoT(readptr);
             }
         } else {
-            readtxt = readASCII_MM(readptr);
+            if (lang == Config::Language::JP) {
+                readtxt = readShiftJIS_MM(readptr);
+            } else {
+                readtxt = readASCII_MM(readptr);
+            }
         }
 
         for (auto & i : readtxt) {
