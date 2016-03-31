@@ -22,19 +22,39 @@ QVariant TextIDModel::data(const QModelIndex & index, int role) const {
 
     if (role == Qt::DisplayRole) {
         if (index.internalId() == 0) {
-            return Config::langString(std::next(id_maps.begin(), index.row())->first).c_str();
+            if (index.column() == 0) {
+                return Config::langString(std::next(id_maps.begin(), index.row())->first).c_str();
+            } else {
+                return QVariant();
+            }
         } else {
-            return QString("ID 0x%1").arg(
-                QString("%1").arg(
-                    std::next(
+            if (index.column() == 0) {
+                return QString("ID 0x%1").arg(
+                    QString("%1").arg(
                         std::next(
-                            id_maps.begin(), 
-                            index.internalId() - 1
-                        )->second.begin(), index.row()
-                    )->first,
-                    4,
-                    16,
-                    QChar('0')).toUpper());
+                            std::next(
+                                id_maps.begin(),
+                                index.internalId() - 1
+                            )->second.begin(), index.row()
+                        )->first,
+                        4,
+                        16,
+                        QChar('0')).toUpper());
+            } else if (index.column() == 1) {
+                return QString("0x%1").arg(
+                    QString("%1").arg(
+                        std::next(
+                            std::next(
+                                id_maps.begin(),
+                                index.internalId() - 1
+                            )->second.begin(), index.row()
+                        )->second,
+                        6,
+                        16,
+                        QChar('0')).toUpper());
+            } else {
+                return QVariant();
+            }
         }
     } else if (role == rawRole) {
         if (index.internalId() == 0) {
@@ -50,11 +70,17 @@ QVariant TextIDModel::data(const QModelIndex & index, int role) const {
 }
 
 QVariant TextIDModel::headerData(int sect, Qt::Orientation orient, int role) const {
-    if (role != Qt::DisplayRole || orient != Qt::Horizontal || sect > 0) {
+    if (role != Qt::DisplayRole || orient != Qt::Horizontal) {
         return QVariant();
     }
 
-    return "ID";
+    if (sect == 0) {
+        return "ID";
+    } else if (sect == 1) {
+        return "Address";
+    } else {
+        return QVariant();
+    }
 }
 
 QModelIndex TextIDModel::index(int row, int col, const QModelIndex & parent) const {
@@ -72,7 +98,7 @@ QModelIndex TextIDModel::parent(const QModelIndex & index) const {
         return QModelIndex();
     }
 
-    return createIndex(index.internalId() - 1, index.column(), quintptr(0));
+    return createIndex(index.internalId() - 1, 0, quintptr(0));
 }
 
 int TextIDModel::rowCount(const QModelIndex & parent) const {
@@ -88,5 +114,5 @@ int TextIDModel::rowCount(const QModelIndex & parent) const {
 }
 
 int TextIDModel::columnCount(const QModelIndex & /*parent*/) const {
-    return 1;
+    return 2;
 }

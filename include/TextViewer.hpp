@@ -35,8 +35,7 @@ class TextViewer : public QMainWindow {
     QHBoxLayout * qhb;
 
     TextRender * msgrend;
-    QFrame * mrfr;
-    QHBoxLayout * dumblay;
+
     QVBoxLayout * qvb;
 
     QWidget * dummy;
