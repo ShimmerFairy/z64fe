@@ -23,6 +23,8 @@ TextViewer::TextViewer(ROM::ROM & r) : trom(&r) {
     idmod = new TextIDModel(trom->msgTbl());
     msgview = new QTextEdit;
     qhb = new QHBoxLayout;
+    msgrend = new TextRender;
+    qvb = new QVBoxLayout;
     dummy = new QWidget;
 
     idlist->setModel(idmod);
@@ -33,7 +35,10 @@ TextViewer::TextViewer(ROM::ROM & r) : trom(&r) {
     qhb->addWidget(idlist);
     qhb->addWidget(msgview);
 
-    dummy->setLayout(qhb);
+    qvb->addLayout(qhb);
+    qvb->addWidget(msgrend);
+
+    dummy->setLayout(qvb);
 
     setCentralWidget(dummy);
 
@@ -108,5 +113,7 @@ void TextViewer::chooseText(const QModelIndex & sel, const QModelIndex & /*desel
         }
 
         msgview->setPlainText(res.str().c_str());
+
+        msgrend->newText(readtxt);
     }
 }

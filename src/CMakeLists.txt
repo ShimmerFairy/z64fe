@@ -13,5 +13,6 @@ add_executable(z64fe main.cpp
                      TextViewer.cpp ${CMAKE_SOURCE_DIR}/include/TextViewer.hpp
                      TextIDModel.cpp ${CMAKE_SOURCE_DIR}/include/TextIDModel.hpp
                      TextConv.cpp
-                     TextAST.cpp)
+                     TextAST.cpp
+                     TextRender.cpp ${CMAKE_SOURCE_DIR}/include/TextRender.hpp)
 target_link_libraries(z64fe Qt5::Widgets)

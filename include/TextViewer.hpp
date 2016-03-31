@@ -10,11 +10,13 @@
 #include "Config.hpp"
 #include "TextIDModel.hpp"
 #include "TextAST.hpp"
+#include "TextRender.hpp"
 
 #include <QMainWindow>
 #include <QTreeView>
 #include <QTextEdit>
 #include <QHBoxLayout>
+#include <QFrame>
 
 #include <vector>
 
@@ -31,6 +33,11 @@ class TextViewer : public QMainWindow {
 
     QTextEdit * msgview;
     QHBoxLayout * qhb;
+
+    TextRender * msgrend;
+    QFrame * mrfr;
+    QHBoxLayout * dumblay;
+    QVBoxLayout * qvb;
 
     QWidget * dummy;
 
