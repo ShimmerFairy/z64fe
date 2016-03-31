@@ -12,6 +12,7 @@
 #include <QPainter>
 #include <QFontMetricsF>
 #include <QtDebug>
+#include <QIcon>
 
 TextRender::TextRender() {
     // set up size constraints; the +2 is for the border, so we don't lose any
@@ -52,7 +53,7 @@ void TextRender::paintEvent(QPaintEvent * ev) {
 
     qp.translate(1, 1); // get away from the border
 
-    QFont qf("sans", 10);
+    QFont qf("sans", 8);
     QFontMetricsF qfmet(qf);
 
     qp.setFont(qf);
@@ -116,7 +117,8 @@ void TextRender::paintEvent(QPaintEvent * ev) {
     // and finally, text drawing! (for now, just the first box)
 
     for (auto & i : parts) {
-        std::string curlit;;
+        std::string curlit;
+        QIcon curcon;
 
         // not in the switch since we need to use 'break' for this loop
         if (i.getType() == TextAST::Type::NewBox) {
@@ -189,6 +191,68 @@ void TextRender::paintEvent(QPaintEvent * ev) {
                     }
                 }
             }
+            break;
+
+          case TextAST::Type::Button:
+            switch (i.getButton()) {
+              case TextAST::Button::A:
+                curcon = QIcon(":/controller/buttonA.svg");
+                break;
+
+              case TextAST::Button::B:
+                curcon = QIcon(":/controller/buttonB.svg");
+                break;
+
+              case TextAST::Button::C:
+                curcon = QIcon(":/controller/buttonC.svg");
+                break;
+
+              case TextAST::Button::L:
+                curcon = QIcon(":/controller/buttonL.svg");
+                break;
+
+              case TextAST::Button::R:
+                curcon = QIcon(":/controller/buttonR.svg");
+                break;
+
+              case TextAST::Button::Z:
+                curcon = QIcon(":/controller/buttonZ.svg");
+                break;
+
+              case TextAST::Button::C_UP:
+                curcon = QIcon(":/controller/buttonCUP.svg");
+                break;
+
+              case TextAST::Button::C_DOWN:
+                curcon = QIcon(":/controller/buttonCDOWN.svg");
+                break;
+
+              case TextAST::Button::C_LEFT:
+                curcon = QIcon(":/controller/buttonCLEFT.svg");
+                break;
+
+              case TextAST::Button::C_RIGHT:
+                curcon = QIcon(":/controller/buttonCRIGHT.svg");
+                break;
+
+              case TextAST::Button::ASTICK:
+                curcon = QIcon(":/controller/analog.svg");
+                break;
+
+              case TextAST::Button::DPAD:
+                curcon = QIcon(":/controller/buttonDPAD.svg");
+                break;
+            }
+
+            curcon.paint(&qp, QRectF(cursor - QPointF(0, qfmet.ascent()),
+                                     cursor + QPointF(qfmet.height(), qfmet.descent())).toRect());
+
+            // move cursor after picture (expect a space in text data to be after button)
+            cursor += QPointF(qfmet.height(), 0).toPoint();
+            break;
+
+          default:
+            // do nothing
             break;
         }
     }

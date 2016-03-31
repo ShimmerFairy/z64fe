@@ -6,5 +6,18 @@
     <file>icons/application-exit.svg</file>
     <file>icons/package-x-generic.svg</file>
     <file>appicon.svg</file>
+    <file>controller/analog.svg</file>
+    <file>controller/buttonA.svg</file>
+    <file>controller/buttonB.svg</file>
+    <file>controller/buttonC.svg</file>
+    <file>controller/buttonCUP.svg</file>
+    <file>controller/buttonCDOWN.svg</file>
+    <file>controller/buttonCLEFT.svg</file>
+    <file>controller/buttonCRIGHT.svg</file>
+    <file>controller/buttonDPAD.svg</file>
+    <file>controller/buttonL.svg</file>
+    <file>controller/buttonR.svg</file>
+    <file>controller/buttonZ.svg</file>
+    <file>controller/buttonSTART.svg</file>
   </qresource>
 </RCC>
