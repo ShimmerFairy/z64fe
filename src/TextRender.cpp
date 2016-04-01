@@ -10,6 +10,7 @@
 #include <QFontMetricsF>
 #include <QtDebug>
 #include <QIcon>
+#include <QTime>
 
 TextRender::TextRender() {
     // set up size constraints; the +2 is for the border, so we don't lose any
@@ -79,10 +80,10 @@ void TextRender::paintEvent(QPaintEvent * ev) {
 
     for (auto & i : parts) {
         // thankfully, only literals can have newlines in them
-        if (i.getType() != TextAST::Type::Literal) {
-            continue;
-        } else if (i.getType() != TextAST::Type::NewBox) {
+        if (i.getType() == TextAST::Type::NewBox) {
             break;
+        } else if (i.getType() != TextAST::Type::Literal) {
+            continue;
         }
 
         std::string chk = i.codeString(); // this'll be the literal itself for Literal type
@@ -91,8 +92,9 @@ void TextRender::paintEvent(QPaintEvent * ev) {
     }
 
     // the cast here is because C++ template deduction is brain-damaged, in g++
-    // at least.
-    lines = std::max(lines, size_t(4)); // limit to at most four, extra lines
+    // at least (it's the fact that apparently literals can't be deduced as a
+    // variety of possible types).
+    lines = std::min(lines, size_t(4)); // limit to at most four, extra lines
                                         // overflow (OoT 1.0 bug)
 
     // set up cursor with proper initial position to let us move it relatively
@@ -254,6 +256,24 @@ void TextRender::paintEvent(QPaintEvent * ev) {
             // since it's just a bunch of spaces, we won't bother to actually
             // print them; just move the cursor! Yay!
             cursor += QPointF(i.getValue(), 0);
+            break;
+
+          case TextAST::Type::PlayerName:
+            qf.setUnderline(true);
+            qp.setFont(qf);
+
+            qp.drawText(cursor, "Link");
+            cursor += QPointF(qfmet.width("Link"), 0);
+
+            qf.setUnderline(false);
+            qp.setFont(qf);
+            break;
+
+          case TextAST::Type::WorldTime:
+            curlit = QTime::currentTime().toString("HH:mm").toStdString();
+
+            qp.drawText(cursor, curlit.c_str());
+            cursor += QPointF(qfmet.width(curlit.c_str()), 0);
             break;
 
           default:
