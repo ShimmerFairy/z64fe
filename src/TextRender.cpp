@@ -4,9 +4,6 @@
  *
  */
 
-// 512 x 128 (@double), 12pt, 284 dwn (@d), <-> centered
-// 256 x 64, , 142 dwn
-
 #include "TextRender.hpp"
 
 #include <QPainter>
@@ -65,11 +62,12 @@ void TextRender::paintEvent(QPaintEvent * ev) {
         return;
     }
 
-    // start with our box, placed and colored appropriately.
+    // start with our box, placed and colored appropriately (apparently the
+    // x-pos is two off from center, who knows why).
     qp.setBrush(QColor(0, 0, 0, 0xC0));
     qp.setPen(Qt::NoPen);
 
-    qp.drawRoundedRect(32, 142, 256, 64, 4, 4);
+    qp.drawRoundedRect(34, 142, 256, 64, 4, 4);
 
     // now set pen to default text color
     qp.setPen(QColor(Qt::white));
@@ -99,10 +97,11 @@ void TextRender::paintEvent(QPaintEvent * ev) {
 
     // set up cursor with proper initial position to let us move it relatively
     // speaking (at least in the initial setup)
-    QPointF cursor(32, 142);
+    QPointF cursor(34, 142);
 
-    // for now, just assume the cursor is 16 right of the box's left edge
-    cursor += QPointF(16, 0);
+    // text is 32px off from left edge (presumably right too, but right-aligning
+    // would have to be done manually so it doesn't matter)
+    cursor += QPointF(32, 0);
 
     // now to discover where to center things vertically; we'll find the top of
     // the first line when centered, then add ascent to it (since text drawing
@@ -184,7 +183,7 @@ void TextRender::paintEvent(QPaintEvent * ev) {
                     qp.drawText(cursor, i);
 
                     if (pos < qsl.size()) {
-                        cursor.setX(32 + 16);
+                        cursor.setX(34 + 32);
                         cursor += QPointF(0, qfmet.lineSpacing());
                     } else {
                         cursor += QPointF(qfmet.width(i), 0);
@@ -248,7 +247,13 @@ void TextRender::paintEvent(QPaintEvent * ev) {
                                      cursor + QPointF(qfmet.height(), qfmet.descent())).toRect());
 
             // move cursor after picture (expect a space in text data to be after button)
-            cursor += QPointF(qfmet.height(), 0).toPoint();
+            cursor += QPointF(qfmet.height(), 0);
+            break;
+
+          case TextAST::Type::Multispace:
+            // since it's just a bunch of spaces, we won't bother to actually
+            // print them; just move the cursor! Yay!
+            cursor += QPointF(i.getValue(), 0);
             break;
 
           default:

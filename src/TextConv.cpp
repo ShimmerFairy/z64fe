@@ -117,7 +117,7 @@ std::vector<TextAST> readASCII_OoT(std::vector<uint8_t>::iterator & takethis) {
                 break;
 
               case 0x06:
-                the_list.emplace_back(TextAST::Type::Multispace, *takethis);
+                the_list.emplace_back(TextAST::Type::Multispace, *++takethis);
                 break;
 
               case 0x07:
