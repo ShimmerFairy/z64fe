@@ -7,11 +7,13 @@
 
 #pragma once
 
+#include "Exceptions.hpp"
+
 #include <cstdint>
 #include <string>
+#include <vector>
 
-class TextAST {
-  public:
+namespace TextAST {
     enum class Type {
         Literal,
         EndMessage,
@@ -59,6 +61,7 @@ class TextAST {
         BankRupeePrompt,
         ShowRupeesGiven,
         ShowRupeesEarned,
+        TimeLeft,
         LotteryRupeePrompt,
         BomberCodePrompt,
         WaitOnItem,
@@ -109,25 +112,74 @@ class TextAST {
         DPAD,
     };
 
-  private:
-    Type atype;
-    std::string lit;
-    uint32_t val;
-    Color col;
-    Button btn;
+    class Fragment {
+      private:
+        Type ftype;
 
-  public:
-    TextAST(std::string L);
-    TextAST(Color C);
-    TextAST(Button B);
-    TextAST(Type T, uint32_t V = 0);
+        std::string strval;
+        uint32_t intval;
+        Color colval;
+        Button btnval;
 
-    Color getColor() const;
-    uint32_t getValue() const;
-    Type getType() const;
-    Button getButton() const;
+      public:
+        Fragment(std::string L);
+        Fragment(Color C);
+        Fragment(Button B);
+        Fragment(Type T, uint32_t V = 0);
 
-    std::string codeString() const;
+        Type getType() const;
 
-    bool literalAddText(std::string n);
-};
+        template<typename T>
+        T getValue() const;
+
+        bool tryMoreText(std::string txt);
+    };
+
+    class Line {
+      private:
+        std::vector<Fragment> pieces;
+
+      public:
+        void push(Fragment np);
+
+        void addMoreText(std::string txt);
+
+        std::vector<Fragment>::iterator begin();
+        std::vector<Fragment>::iterator end();
+    };
+
+    class Box {
+      private:
+        std::vector<Line> lines;
+
+      public:
+        void push(Line nl);
+
+        Line & curline();
+
+        size_t size() const;
+
+        std::vector<Line>::iterator begin();
+        std::vector<Line>::iterator end();
+    };
+}
+
+// put here to avoid the generic exceptions include depending on this one
+// instead
+
+namespace X {
+    namespace Text {
+        class WrongVariant : public Exception {
+          private:
+            TextAST::Type got;
+            TextAST::Type expect;
+            bool expect_specific;
+
+          public:
+            WrongVariant(TextAST::Type g);
+            WrongVariant(TextAST::Type g, TextAST::Type e);
+
+            std::string what();
+        };
+    }
+}

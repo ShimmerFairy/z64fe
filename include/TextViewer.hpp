@@ -26,7 +26,7 @@ class TextViewer : public QMainWindow {
   private:
     ROM::ROM * trom;
 
-    std::vector<TextAST> readtxt;
+    std::vector<TextAST::Box> readtxt;
 
     QTreeView * idlist;
     TextIDModel * idmod;
@@ -39,6 +39,9 @@ class TextViewer : public QMainWindow {
     QVBoxLayout * qvb;
 
     QWidget * dummy;
+
+    std::string fragAsCode(TextAST::Fragment frag);
+    void writeCodeText();
 
   private slots:
     void chooseText(const QModelIndex & sel, const QModelIndex & desel);

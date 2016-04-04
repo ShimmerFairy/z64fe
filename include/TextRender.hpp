@@ -17,13 +17,13 @@ class TextRender : public QFrame {
     Q_OBJECT
 
   private:
-    std::vector<TextAST> parts;
+    std::vector<TextAST::Box> parts;
 
   protected:
     void paintEvent(QPaintEvent * ev) override;
 
   public slots:
-    void newText(std::vector<TextAST> np);
+    void newText(std::vector<TextAST::Box> np);
 
   public:
     TextRender();

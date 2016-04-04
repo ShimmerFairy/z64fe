@@ -12,15 +12,9 @@
 
 #include <map>
 
-std::vector<TextAST> readASCII_OoT(std::vector<uint8_t>::iterator & takethis) {
-    std::vector<TextAST> the_list;
+std::vector<TextAST::Box> readASCII_OoT(std::vector<uint8_t>::iterator & takethis) {
+    std::vector<TextAST::Box> the_list;
     bool cont = true;
-
-    auto addlit = [&](std::string piece) {
-        if (the_list.size() == 0 || !the_list.back().literalAddText(piece)) {
-            the_list.emplace_back(piece);
-        }
-    };
 
     static const std::map<uint8_t, std::string> specialChar{
         { 0x7F, "‾" },
@@ -56,58 +50,64 @@ std::vector<TextAST> readASCII_OoT(std::vector<uint8_t>::iterator & takethis) {
         { 0x9D, "û" },
         { 0x9E, "ü" }};
 
+    the_list.emplace_back();
+    the_list.back().push(TextAST::Line());
+
     while (cont) {
         if (*takethis < 0x20) {
             switch (*takethis) {
               case 0x00:
-                addlit("\0");
+                the_list.back().curline().addMoreText("\0");
                 break;
 
               case 0x01:
-                addlit("\n");
+                // new line means, well, a new line
+                the_list.back().push(TextAST::Line());
                 break;
 
               case 0x02:
-                the_list.emplace_back(TextAST::Type::EndMessage);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::EndMessage));
                 cont = false;
                 break;
 
               case 0x04:
-                the_list.emplace_back(TextAST::Type::NewBox);
+                // new box for new box
+                the_list.emplace_back();
+                the_list.back().push(TextAST::Line());
                 break;
 
               case 0x05:
                 switch (*(++takethis)) {
                   case 0x40:
-                    the_list.emplace_back(TextAST::Color::White);
+                    the_list.back().curline().push(TextAST::Fragment(TextAST::Color::White));
                     break;
 
                   case 0x41:
-                    the_list.emplace_back(TextAST::Color::Red);
+                    the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Red));
                     break;
 
                   case 0x42:
-                    the_list.emplace_back(TextAST::Color::Green);
+                    the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Green));
                     break;
 
                   case 0x43:
-                    the_list.emplace_back(TextAST::Color::Blue);
+                    the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Blue));
                     break;
 
                   case 0x44:
-                    the_list.emplace_back(TextAST::Color::Cyan);
+                    the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Cyan));
                     break;
 
                   case 0x45:
-                    the_list.emplace_back(TextAST::Color::Magenta);
+                    the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Magenta));
                     break;
 
                   case 0x46:
-                    the_list.emplace_back(TextAST::Color::Yellow);
+                    the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Yellow));
                     break;
 
                   case 0x47:
-                    the_list.emplace_back(TextAST::Color::Black);
+                    the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Black));
                     break;
 
                   default:
@@ -117,160 +117,160 @@ std::vector<TextAST> readASCII_OoT(std::vector<uint8_t>::iterator & takethis) {
                 break;
 
               case 0x06:
-                the_list.emplace_back(TextAST::Type::Multispace, *++takethis);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::Multispace, *++takethis));
                 break;
 
               case 0x07:
-                the_list.emplace_back(TextAST::Type::Goto, be_u16(takethis + 1));
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::Goto, be_u16(takethis + 1)));
                 takethis += 2;
                 break;
 
               case 0x08:
-                the_list.emplace_back(TextAST::Type::InstantTextState, true);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::InstantTextState, true));
                 break;
 
               case 0x09:
-                the_list.emplace_back(TextAST::Type::InstantTextState, false);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::InstantTextState, false));
                 break;
 
               case 0x0A:
-                the_list.emplace_back(TextAST::Type::StayOpen);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::StayOpen));
                 break;
 
               case 0x0B:
-                the_list.emplace_back(TextAST::Type::UnknownTrigger);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::UnknownTrigger));
                 break;
 
               case 0x0C:
-                the_list.emplace_back(TextAST::Type::Delay, *++takethis);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::Delay, *++takethis));
                 break;
 
               case 0x0D:
-                the_list.emplace_back(TextAST::Type::WaitOnButton);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::WaitOnButton));
                 break;
 
               case 0x0E:
-                the_list.emplace_back(TextAST::Type::DelayThenFade, *++takethis);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::DelayThenFade, *++takethis));
                 break;
 
               case 0x0F:
-                the_list.emplace_back(TextAST::Type::PlayerName);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::PlayerName));
                 break;
 
               case 0x10:
-                the_list.emplace_back(TextAST::Type::StartOcarina);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::StartOcarina));
                 break;
 
               case 0x11:
-                the_list.emplace_back(TextAST::Type::FadeWaitStop);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::FadeWaitStop));
                 break;
 
               case 0x12:
-                the_list.emplace_back(TextAST::Type::PlaySFX, be_u16(takethis + 1));
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::PlaySFX, be_u16(takethis + 1)));
                 takethis += 2;
                 break;
 
               case 0x13:
-                the_list.emplace_back(TextAST::Type::ShowIcon, *++takethis);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ShowIcon, *++takethis));
                 break;
 
               case 0x14:
-                the_list.emplace_back(TextAST::Type::TextSpeedAt, *++takethis);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::TextSpeedAt, *++takethis));
                 break;
 
               case 0x15:
-                the_list.emplace_back(TextAST::Type::ChangeMsgBG, be_u24(takethis + 1));
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ChangeMsgBG, be_u24(takethis + 1)));
                 takethis += 3;
                 break;
 
               case 0x16:
-                the_list.emplace_back(TextAST::Type::MarathonTime);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::MarathonTime));
                 break;
 
               case 0x17:
-                the_list.emplace_back(TextAST::Type::RaceTime);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::RaceTime));
                 break;
 
               case 0x18:
-                the_list.emplace_back(TextAST::Type::NumPoints);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::NumPoints));
                 break;
 
               case 0x19:
-                the_list.emplace_back(TextAST::Type::NumGoldSkulls);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::NumGoldSkulls));
                 break;
 
               case 0x1A:
-                the_list.emplace_back(TextAST::Type::NoSkipping);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::NoSkipping));
                 break;
 
               case 0x1B:
-                the_list.emplace_back(TextAST::Type::TwoChoices);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::TwoChoices));
                 break;
 
               case 0x1C:
-                the_list.emplace_back(TextAST::Type::ThreeChoices);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ThreeChoices));
                 break;
 
               case 0x1D:
-                the_list.emplace_back(TextAST::Type::FishWeight);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::FishWeight));
                 break;
 
               case 0x1E:
-                the_list.emplace_back(TextAST::Type::Highscore, *++takethis);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::Highscore, *++takethis));
                 break;
 
               case 0x1F:
-                the_list.emplace_back(TextAST::Type::WorldTime);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::WorldTime));
                 break;
             }
         } else if (0x20 <= *takethis && *takethis <= 0x7E) {
             if (*takethis == 0x5C) {
-                addlit("¥");
+                the_list.back().curline().addMoreText("¥");
             } else {
-                addlit(std::string(1, *takethis));
+                the_list.back().curline().addMoreText(std::string(1, *takethis));
             }
         } else if (0x7F <= *takethis && *takethis <= 0x9E) {
-            addlit(specialChar.at(*takethis));
+            the_list.back().curline().addMoreText(specialChar.at(*takethis));
         } else if (0x9F <= *takethis && *takethis <= 0xAB) {
             switch (*takethis) {
               case 0x9F:
-                the_list.emplace_back(TextAST::Button::A);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::A));
                 break;
               case 0xA0:
-                the_list.emplace_back(TextAST::Button::B);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::B));
                 break;
               case 0xA1:
-                the_list.emplace_back(TextAST::Button::C);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::C));
                 break;
               case 0xA2:
-                the_list.emplace_back(TextAST::Button::L);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::L));
                 break;
               case 0xA3:
-                the_list.emplace_back(TextAST::Button::R);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::R));
                 break;
               case 0xA4:
-                the_list.emplace_back(TextAST::Button::Z);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::Z));
                 break;
               case 0xA5:
-                the_list.emplace_back(TextAST::Button::C_UP);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::C_UP));
                 break;
               case 0xA6:
-                the_list.emplace_back(TextAST::Button::C_DOWN);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::C_DOWN));
                 break;
               case 0xA7:
-                the_list.emplace_back(TextAST::Button::C_LEFT);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::C_LEFT));
                 break;
               case 0xA8:
-                the_list.emplace_back(TextAST::Button::C_RIGHT);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::C_RIGHT));
                 break;
               case 0xA9:
-                addlit("▼");
+                the_list.back().curline().addMoreText("▼");
                 break;
               case 0xAA:
-                the_list.emplace_back(TextAST::Button::ASTICK);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::ASTICK));
                 break;
               case 0xAB:
-                the_list.emplace_back(TextAST::Button::DPAD);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::DPAD));
                 break;
             }
         } else {
@@ -286,15 +286,12 @@ std::vector<TextAST> readASCII_OoT(std::vector<uint8_t>::iterator & takethis) {
 
 
 
-std::vector<TextAST> readShiftJIS_OoT(std::vector<uint8_t>::iterator & takethis) {
-    std::vector<TextAST> the_list;
+std::vector<TextAST::Box> readShiftJIS_OoT(std::vector<uint8_t>::iterator & takethis) {
+    std::vector<TextAST::Box> the_list;
     bool cont = true;
 
-    auto addlit = [&](std::string piece) {
-        if (the_list.size() == 0 || !the_list.back().literalAddText(piece)) {
-            the_list.emplace_back(piece);
-        }
-    };
+    the_list.emplace_back();
+    the_list.back().push(TextAST::Line());
 
     while (cont) {
         uint8_t first = *takethis++;
@@ -309,7 +306,7 @@ std::vector<TextAST> readShiftJIS_OoT(std::vector<uint8_t>::iterator & takethis)
             second = *takethis++;
             switch (second) {
               case 0x0A:
-                addlit("\n");
+                the_list.back().push(TextAST::Line());
                 break;
 
               case 0x0B:
@@ -318,35 +315,35 @@ std::vector<TextAST> readShiftJIS_OoT(std::vector<uint8_t>::iterator & takethis)
                     fourth = *takethis++;
                     switch (fourth) {
                       case 0x00:
-                        the_list.emplace_back(TextAST::Color::White);
+                        the_list.back().curline().push(TextAST::Fragment(TextAST::Color::White));
                         break;
 
                       case 0x01:
-                        the_list.emplace_back(TextAST::Color::Red);
+                        the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Red));
                         break;
 
                       case 0x02:
-                        the_list.emplace_back(TextAST::Color::Green);
+                        the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Green));
                         break;
 
                       case 0x03:
-                        the_list.emplace_back(TextAST::Color::Blue);
+                        the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Blue));
                         break;
 
                       case 0x04:
-                        the_list.emplace_back(TextAST::Color::Cyan);
+                        the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Cyan));
                         break;
 
                       case 0x05:
-                        the_list.emplace_back(TextAST::Color::Magenta);
+                        the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Magenta));
                         break;
 
                       case 0x06:
-                        the_list.emplace_back(TextAST::Color::Yellow);
+                        the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Yellow));
                         break;
 
                       case 0x07:
-                        the_list.emplace_back(TextAST::Color::Black);
+                        the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Black));
                         break;
 
                       default:
@@ -362,7 +359,7 @@ std::vector<TextAST> readShiftJIS_OoT(std::vector<uint8_t>::iterator & takethis)
                 // at this point, 00 must be null, which is currently handled by
                 // giving a literal null. We also unadvance the takethis, since
                 // the second byte isn't ours after all.
-                addlit("\0");
+                the_list.back().curline().addMoreText("\0");
                 takethis--;
                 break;
             }
@@ -372,31 +369,32 @@ std::vector<TextAST> readShiftJIS_OoT(std::vector<uint8_t>::iterator & takethis)
             second = *takethis++;
             switch (second) {
               case 0x70:
-                the_list.emplace_back(TextAST::Type::EndMessage);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::EndMessage));
                 cont = false;
                 break;
 
               case 0xA5:
-                the_list.emplace_back(TextAST::Type::NewBox);
+                the_list.emplace_back();
+                the_list.back().push(TextAST::Line());
                 break;
 
               case 0xCB:
                 // third and fourth implicitly in be_u16, so not assigned in this
                 // case
-                the_list.emplace_back(TextAST::Type::Goto, be_u16(takethis));
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::Goto, be_u16(takethis)));
                 takethis += 2; // advance past ID bytes (third & fourth)
                 break;
 
               case 0x89:
-                the_list.emplace_back(TextAST::Type::InstantTextState, true);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::InstantTextState, true));
                 break;
 
               case 0x8A:
-                the_list.emplace_back(TextAST::Type::InstantTextState, false);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::InstantTextState, false));
                 break;
 
               case 0x9F:
-                the_list.emplace_back(TextAST::Type::UnknownTrigger);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::UnknownTrigger));
                 break;
 
               case 0xA3:
@@ -404,7 +402,7 @@ std::vector<TextAST> readShiftJIS_OoT(std::vector<uint8_t>::iterator & takethis)
 
                 if (third == 0x00) {
                     fourth = *takethis++;
-                    the_list.emplace_back(TextAST::Type::Delay, fourth);
+                    the_list.back().curline().push(TextAST::Fragment(TextAST::Type::Delay, fourth));
                 } else {
                     throw X::Text::BadSequence({first, second, third});
                 }
@@ -415,19 +413,19 @@ std::vector<TextAST> readShiftJIS_OoT(std::vector<uint8_t>::iterator & takethis)
 
                 if (third == 0x00) {
                     fourth = *takethis++;
-                    the_list.emplace_back(TextAST::Type::DelayThenFade, fourth);
+                    the_list.back().curline().push(TextAST::Fragment(TextAST::Type::DelayThenFade, fourth));
                 } else {
                     throw X::Text::BadSequence({first, second, third});
                 }
                 break;
 
               case 0xF0:
-                the_list.emplace_back(TextAST::Type::StartOcarina);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::StartOcarina));
                 break;
 
               case 0xF3:
                 // third and fourth implied in be_u16
-                the_list.emplace_back(TextAST::Type::PlaySFX, be_u16(takethis));
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::PlaySFX, be_u16(takethis)));
                 takethis += 2; // advance past third and fourth
                 break;
 
@@ -436,33 +434,33 @@ std::vector<TextAST> readShiftJIS_OoT(std::vector<uint8_t>::iterator & takethis)
 
                 if (third == 0x00) {
                     fourth = *takethis++;
-                    the_list.emplace_back(TextAST::Type::ShowIcon, fourth);
+                    the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ShowIcon, fourth));
                 } else {
                     throw X::Text::BadSequence({first, second, third});
                 }
                 break;
 
               case 0x99:
-                the_list.emplace_back(TextAST::Type::NoSkipping);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::NoSkipping));
                 break;
 
               case 0xBC:
-                the_list.emplace_back(TextAST::Type::TwoChoices);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::TwoChoices));
                 break;
 
               case 0xB8:
-                the_list.emplace_back(TextAST::Type::ThreeChoices);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ThreeChoices));
                 break;
 
               case 0xA1:
-                the_list.emplace_back(TextAST::Type::WorldTime);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::WorldTime));
                 break;
 
               default:
                 // otherwise, we know it has to be a normal two-byte Shift-JIS
                 // character.
 
-                addlit(code_to_utf8(SJIS_doubleTable.at(first).at(second)));
+                the_list.back().curline().addMoreText(code_to_utf8(SJIS_doubleTable.at(first).at(second)));
                 break;
             }
             break;
@@ -472,46 +470,46 @@ std::vector<TextAST> readShiftJIS_OoT(std::vector<uint8_t>::iterator & takethis)
 
             switch (second) {
               case 0x9F:
-                the_list.emplace_back(TextAST::Button::A);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::A));
                 break;
               case 0xA0:
-                the_list.emplace_back(TextAST::Button::B);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::B));
                 break;
               case 0xA1:
-                the_list.emplace_back(TextAST::Button::C);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::C));
                 break;
               case 0xA2:
-                the_list.emplace_back(TextAST::Button::L);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::L));
                 break;
               case 0xA3:
-                the_list.emplace_back(TextAST::Button::R);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::R));
                 break;
               case 0xA4:
-                the_list.emplace_back(TextAST::Button::Z);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::Z));
                 break;
               case 0xA5:
-                the_list.emplace_back(TextAST::Button::C_UP);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::C_UP));
                 break;
               case 0xA6:
-                the_list.emplace_back(TextAST::Button::C_DOWN);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::C_DOWN));
                 break;
               case 0xA7:
-                the_list.emplace_back(TextAST::Button::C_LEFT);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::C_LEFT));
                 break;
               case 0xA8:
-                the_list.emplace_back(TextAST::Button::C_RIGHT);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::C_RIGHT));
                 break;
               case 0xA9:
-                addlit("▼");
+                the_list.back().curline().addMoreText("▼");
                 break;
               case 0xAA:
-                the_list.emplace_back(TextAST::Button::ASTICK);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::ASTICK));
                 break;
               case 0xAB:
-                the_list.emplace_back(TextAST::Button::DPAD);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::DPAD));
                 break;
               default:
-                addlit(code_to_utf8(SJIS_doubleTable.at(first).at(second)));
+                the_list.back().curline().addMoreText(code_to_utf8(SJIS_doubleTable.at(first).at(second)));
                 break;
             }
             break;
@@ -526,14 +524,14 @@ std::vector<TextAST> readShiftJIS_OoT(std::vector<uint8_t>::iterator & takethis)
                 if (third == 0x00) {
                     fourth = *takethis++;
 
-                    the_list.emplace_back(TextAST::Type::Multispace, fourth);
+                    the_list.back().curline().push(TextAST::Fragment(TextAST::Type::Multispace, fourth));
                 } else {
                     throw X::Text::BadSequence({first, second, third});
                 }
                 break;
 
               case 0xC8:
-                the_list.emplace_back(TextAST::Type::StayOpen);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::StayOpen));
                 break;
 
               case 0xC9:
@@ -542,7 +540,7 @@ std::vector<TextAST> readShiftJIS_OoT(std::vector<uint8_t>::iterator & takethis)
                 if (third == 0x00) {
                     fourth = *takethis++;
 
-                    the_list.emplace_back(TextAST::Type::TextSpeedAt, fourth);
+                    the_list.back().curline().push(TextAST::Fragment(TextAST::Type::TextSpeedAt, fourth));
                 } else {
                     throw X::Text::BadSequence({first, second, third});
                 }
@@ -555,7 +553,7 @@ std::vector<TextAST> readShiftJIS_OoT(std::vector<uint8_t>::iterator & takethis)
                     // this value takes up three bytes (fourth, fifth, and
                     // sixth!). We'll be using be_u24 to get them, though.
 
-                    the_list.emplace_back(TextAST::Type::ChangeMsgBG, be_u24(takethis));
+                    the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ChangeMsgBG, be_u24(takethis)));
 
                     takethis += 3;
                 } else {
@@ -564,11 +562,11 @@ std::vector<TextAST> readShiftJIS_OoT(std::vector<uint8_t>::iterator & takethis)
                 break;
 
               case 0xA3:
-                the_list.emplace_back(TextAST::Type::NumGoldSkulls);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::NumGoldSkulls));
                 break;
 
               case 0xA4:
-                the_list.emplace_back(TextAST::Type::FishWeight);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::FishWeight));
                 break;
 
               case 0x9F:
@@ -577,7 +575,7 @@ std::vector<TextAST> readShiftJIS_OoT(std::vector<uint8_t>::iterator & takethis)
                 if (third == 0x00) {
                     fourth = *takethis++;
 
-                    the_list.emplace_back(TextAST::Type::Highscore, fourth);
+                    the_list.back().curline().push(TextAST::Fragment(TextAST::Type::Highscore, fourth));
                 } else {
                     throw X::Text::BadSequence({first, second, third});
                 }
@@ -596,19 +594,19 @@ std::vector<TextAST> readShiftJIS_OoT(std::vector<uint8_t>::iterator & takethis)
 
             switch (second) {
               case 0x4F:
-                the_list.emplace_back(TextAST::Type::PlayerName);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::PlayerName));
                 break;
 
               case 0x91:
-                the_list.emplace_back(TextAST::Type::MarathonTime);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::MarathonTime));
                 break;
 
               case 0x92:
-                the_list.emplace_back(TextAST::Type::RaceTime);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::RaceTime));
                 break;
 
               case 0x9B:
-                the_list.emplace_back(TextAST::Type::NumPoints);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::NumPoints));
                 break;
 
               default:
@@ -625,14 +623,14 @@ std::vector<TextAST> readShiftJIS_OoT(std::vector<uint8_t>::iterator & takethis)
             if (SJIS_doubleTable.count(first) == 1) {
                 second = *takethis++;
 
-                addlit(code_to_utf8(SJIS_doubleTable.at(first).at(second)));
+                the_list.back().curline().addMoreText(code_to_utf8(SJIS_doubleTable.at(first).at(second)));
             } else if (SJIS_singleTable.count(first) == 1) {
                 // single-byte with special mapping
 
-                addlit(code_to_utf8(SJIS_singleTable.at(first)));
+                the_list.back().curline().addMoreText(code_to_utf8(SJIS_singleTable.at(first)));
             } else {
                 // plain ol' ASCII
-                addlit(std::string(1, first));
+                the_list.back().curline().addMoreText(std::string(1, first));
             }
             break;
         }
@@ -641,15 +639,12 @@ std::vector<TextAST> readShiftJIS_OoT(std::vector<uint8_t>::iterator & takethis)
     return the_list;
 }
 
-std::vector<TextAST> readASCII_MM(std::vector<uint8_t>::iterator & indata) {
-    std::vector<TextAST> the_list;
+std::vector<TextAST::Box> readASCII_MM(std::vector<uint8_t>::iterator & indata) {
+    std::vector<TextAST::Box> the_list;
     bool cont = true;
 
-    auto addlit = [&](std::string piece) {
-        if (the_list.size() == 0 || !the_list.back().literalAddText(piece)) {
-            the_list.emplace_back(piece);
-        }
-    };
+    the_list.emplace_back();
+    the_list.back().push(TextAST::Line());
 
     static const std::map<uint8_t, std::string> specialchar{
         { 0x7F, "°"},
@@ -716,301 +711,302 @@ std::vector<TextAST> readASCII_MM(std::vector<uint8_t>::iterator & indata) {
         first = *indata++;
 
         if (0x20 <= first && first <= 0x7E) {
-            addlit(std::string(1, first));
+            the_list.back().curline().addMoreText(std::string(1, first));
         } else if (0x7F <= first && first <= 0xAF) {
-            addlit(specialchar.at(first));
+            the_list.back().curline().addMoreText(specialchar.at(first));
         } else {
             switch (first) {
               case 0x00:
-                the_list.emplace_back(TextAST::Color::White);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Color::White));
                 break;
 
               case 0x01:
-                the_list.emplace_back(TextAST::Color::Red);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Red));
                 break;
 
               case 0x02:
-                the_list.emplace_back(TextAST::Color::Green);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Green));
                 break;
 
               case 0x03:
-                the_list.emplace_back(TextAST::Color::Blue);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Blue));
                 break;
 
               case 0x04:
-                the_list.emplace_back(TextAST::Color::Yellow);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Yellow));
                 break;
 
               case 0x05:
-                the_list.emplace_back(TextAST::Color::Cyan);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Cyan));
                 break;
 
               case 0x06:
-                the_list.emplace_back(TextAST::Color::Magenta);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Magenta));
                 break;
 
               case 0x07:
-                the_list.emplace_back(TextAST::Color::Gray);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Gray));
                 break;
 
               case 0x08:
-                the_list.emplace_back(TextAST::Color::Orange);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Orange));
                 break;
 
               case 0x0A:
                 second = *indata++;
 
-                the_list.emplace_back(TextAST::Type::Multispace, second);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::Multispace, second));
                 break;
 
               case 0x0B:
-                the_list.emplace_back(TextAST::Type::SwampArchHits);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::SwampArchHits));
                 break;
 
               case 0x0C:
-                the_list.emplace_back(TextAST::Type::NumFairiesGot);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::NumFairiesGot));
                 break;
 
               case 0x0D:
                 // XXX may want separate type for MM's gold skulltulas
-                the_list.emplace_back(TextAST::Type::NumGoldSkulls);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::NumGoldSkulls));
                 break;
 
               case 0x10:
                 // XXX not 100% sure on exact behavior
-                the_list.emplace_back(TextAST::Type::NewBox);
+                the_list.emplace_back();
+                the_list.back().push(TextAST::Line());
                 break;
 
               case 0x11:
-                addlit("\n");
+                the_list.back().push(TextAST::Line());
                 break;
 
               case 0x12:
                 // XXX not 100% sure on exact behavior
-                the_list.emplace_back(TextAST::Type::NewBox);
+                the_list.emplace_back();
+                the_list.back().push(TextAST::Line());
                 break;
 
               case 0x13:
                 // using type for carriage return so we don't have weirdness
                 // possibly in plaintext representation, for instance
-                the_list.emplace_back(TextAST::Type::CarriageReturn);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::CarriageReturn));
                 break;
 
               case 0x15:
-                the_list.emplace_back(TextAST::Type::NoSkipping);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::NoSkipping));
                 break;
 
               case 0x16:
-                the_list.emplace_back(TextAST::Type::PlayerName);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::PlayerName));
                 break;
 
               case 0x17:
-                the_list.emplace_back(TextAST::Type::InstantTextState, true);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::InstantTextState, true));
                 break;
 
               case 0x18:
-                the_list.emplace_back(TextAST::Type::InstantTextState, false);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::InstantTextState, false));
                 break;
 
               case 0x19:
-                the_list.emplace_back(TextAST::Type::NoSkipping_withSfx);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::NoSkipping_withSfx));
                 break;
 
               case 0x1A:
-                the_list.emplace_back(TextAST::Type::StayOpen);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::StayOpen));
                 break;
 
               case 0x1B:
-                the_list.emplace_back(TextAST::Type::DelayThenPrint, be_u16(indata));
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::DelayThenPrint, be_u16(indata)));
                 indata += 2;
                 break;
 
               case 0x1C:
-                the_list.emplace_back(TextAST::Type::StayAfter, be_u16(indata));
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::StayAfter, be_u16(indata)));
                 indata += 2;
                 break;
 
               case 0x1D:
-                the_list.emplace_back(TextAST::Type::DelayThenEndText, be_u16(indata));
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::DelayThenEndText, be_u16(indata)));
                 indata += 2;
                 break;
 
               case 0x1E:
-                the_list.emplace_back(TextAST::Type::PlaySFX, be_u16(indata));
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::PlaySFX, be_u16(indata)));
                 indata += 2;
                 break;
 
               case 0x1F:
                 // XXX for sure it's regular Delay?
-                the_list.emplace_back(TextAST::Type::Delay, be_u16(indata));
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::Delay, be_u16(indata)));
                 indata += 2;
                 break;
 
               case 0xB0:
-                the_list.emplace_back(TextAST::Button::A);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::A));
                 break;
 
               case 0xB1:
-                the_list.emplace_back(TextAST::Button::B);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::B));
                 break;
 
               case 0xB2:
-                the_list.emplace_back(TextAST::Button::C);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::C));
                 break;
 
               case 0xB3:
-                the_list.emplace_back(TextAST::Button::L);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::L));
                 break;
 
               case 0xB4:
-                the_list.emplace_back(TextAST::Button::R);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::R));
                 break;
 
               case 0xB5:
-                the_list.emplace_back(TextAST::Button::Z);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::Z));
                 break;
 
               case 0xB6:
-                the_list.emplace_back(TextAST::Button::C_UP);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::C_UP));
                 break;
 
               case 0xB7:
-                the_list.emplace_back(TextAST::Button::C_DOWN);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::C_DOWN));
                 break;
 
               case 0xB8:
-                the_list.emplace_back(TextAST::Button::C_LEFT);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::C_LEFT));
                 break;
 
               case 0xB9:
-                the_list.emplace_back(TextAST::Button::C_RIGHT);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::C_RIGHT));
                 break;
 
               case 0xBA:
-                addlit("▼");
+                the_list.back().curline().addMoreText("▼");
                 break;
 
               case 0xBB:
-                the_list.emplace_back(TextAST::Button::ASTICK);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Button::ASTICK));
                 break;
 
                 // I'd guess 0xBC for d-pad, but not listed
 
               case 0xBF:
-                the_list.emplace_back(TextAST::Type::EndMessage);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::EndMessage));
                 cont = false;
                 break;
 
               case 0xC1:
-                the_list.emplace_back(TextAST::Type::FailedSongX);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::FailedSongX));
                 break;
 
               case 0xC2:
-                the_list.emplace_back(TextAST::Type::TwoChoices);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::TwoChoices));
                 break;
 
               case 0xC3:
-                the_list.emplace_back(TextAST::Type::ThreeChoices);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ThreeChoices));
                 break;
 
               case 0xC4:
-                the_list.emplace_back(TextAST::Type::PostmanGameTime);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::PostmanGameTime));
                 break;
 
                 // this case is an unused character, but seems worthwhile enough
                 // include support for.
               case 0xC7:
-                the_list.emplace_back(TextAST::Type::TimeLeftInFight);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::TimeLeftInFight));
                 break;
 
               case 0xC8:
-                the_list.emplace_back(TextAST::Type::DekuFlowerGameScore);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::DekuFlowerGameScore));
                 break;
 
               case 0xCB:
-                the_list.emplace_back(TextAST::Type::ShootingGalleryScore);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ShootingGalleryScore));
                 break;
 
               case 0xCC:
-                the_list.emplace_back(TextAST::Type::BankRupeePrompt);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::BankRupeePrompt));
                 break;
 
               case 0xCD:
-                the_list.emplace_back(TextAST::Type::ShowRupeesGiven);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ShowRupeesGiven));
                 break;
 
               case 0xCE:
-                the_list.emplace_back(TextAST::Type::ShowRupeesEarned);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ShowRupeesEarned));
                 break;
 
               case 0xCF:
-                // XXX want different for MM?
-                the_list.emplace_back(TextAST::Type::WorldTime);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::TimeLeft));
                 break;
 
               case 0xD0:
-                the_list.emplace_back(TextAST::Type::LotteryRupeePrompt);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::LotteryRupeePrompt));
                 break;
 
               case 0xD1:
-                the_list.emplace_back(TextAST::Type::BomberCodePrompt);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::BomberCodePrompt));
                 break;
 
               case 0xD2:
-                the_list.emplace_back(TextAST::Type::WaitOnItem);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::WaitOnItem));
                 break;
 
               case 0xD4:
-                the_list.emplace_back(TextAST::Type::SoaringDestination);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::SoaringDestination));
                 break;
 
               case 0xD5:
-                the_list.emplace_back(TextAST::Type::LotteryGuessPrompt);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::LotteryGuessPrompt));
                 break;
 
                 // another [supposedly] unused, but worthy, command
               case 0xD6:
-                the_list.emplace_back(TextAST::Type::OceanSpiderMaskOrder);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::OceanSpiderMaskOrder));
                 break;
 
               case 0xD7:
-                the_list.emplace_back(TextAST::Type::FairiesLeftIn, 1);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::FairiesLeftIn, 1));
                 break;
 
               case 0xD8:
-                the_list.emplace_back(TextAST::Type::FairiesLeftIn, 2);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::FairiesLeftIn, 2));
                 break;
 
               case 0xD9:
-                the_list.emplace_back(TextAST::Type::FairiesLeftIn, 3);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::FairiesLeftIn, 3));
                 break;
 
               case 0xDA:
-                the_list.emplace_back(TextAST::Type::FairiesLeftIn, 4);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::FairiesLeftIn, 4));
                 break;
 
               case 0xDB:
-                the_list.emplace_back(TextAST::Type::SwampArchScore);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::SwampArchScore));
                 break;
 
               case 0xDC:
-                the_list.emplace_back(TextAST::Type::ShowLotteryNumber);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ShowLotteryNumber));
                 break;
 
               case 0xDD:
-                the_list.emplace_back(TextAST::Type::ShowLotteryGuess);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ShowLotteryGuess));
                 break;
 
               case 0xDE:
-                the_list.emplace_back(TextAST::Type::MonetaryValue);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::MonetaryValue));
                 break;
 
               case 0xDF:
-                the_list.emplace_back(TextAST::Type::ShowBomberCode);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ShowBomberCode));
                 break;
 
               case 0xE0:
-                the_list.emplace_back(TextAST::Type::EndConversation);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::EndConversation));
                 // XXX put cont = false here?
                 break;
 
@@ -1020,40 +1016,40 @@ std::vector<TextAST> readASCII_MM(std::vector<uint8_t>::iterator & indata) {
               case 0xE4:
               case 0xE5:
               case 0xE6:
-                the_list.emplace_back(TextAST::Type::ShowMaskColor, first & 0x0F);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ShowMaskColor, first & 0x0F));
                 break;
 
               case 0xE7:
-                the_list.emplace_back(TextAST::Type::HoursLeft);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::HoursLeft));
                 break;
 
               case 0xE8:
-                the_list.emplace_back(TextAST::Type::TimeToMorning);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::TimeToMorning));
                 break;
 
               case 0xF6:
-                the_list.emplace_back(TextAST::Type::OctoArchHiscore);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::OctoArchHiscore));
                 break;
 
                 // supposedly unused, but possibly not
               case 0xF8:
-                the_list.emplace_back(TextAST::Type::BeanPrice);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::BeanPrice));
                 break;
 
               case 0xF9:
-                the_list.emplace_back(TextAST::Type::EponaArchHiscore);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::EponaArchHiscore));
                 break;
 
               case 0xFA:
-                the_list.emplace_back(TextAST::Type::DekuFlowerGameDailyHiscore, 1);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::DekuFlowerGameDailyHiscore, 1));
                 break;
 
               case 0xFB:
-                the_list.emplace_back(TextAST::Type::DekuFlowerGameDailyHiscore, 2);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::DekuFlowerGameDailyHiscore, 2));
                 break;
 
               case 0xFC:
-                the_list.emplace_back(TextAST::Type::DekuFlowerGameDailyHiscore, 3);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::DekuFlowerGameDailyHiscore, 3));
                 break;
             }
         }
@@ -1062,7 +1058,7 @@ std::vector<TextAST> readASCII_MM(std::vector<uint8_t>::iterator & indata) {
     return the_list;
 }
 
-std::vector<TextAST> readShiftJIS_MM(std::vector<uint8_t>::iterator & indata) {
+std::vector<TextAST::Box> readShiftJIS_MM(std::vector<uint8_t>::iterator & indata) {
     // note that MM Shift-JIS in particular seems to thrive on being a modified
     // Shift-JIS with a constant two-byte format (its space character is 0020
     // instead of 20, for example). However, we'll still assume normal,
@@ -1072,14 +1068,11 @@ std::vector<TextAST> readShiftJIS_MM(std::vector<uint8_t>::iterator & indata) {
     // TODO: look more closely into the other, non-shift JIS standards, see if
     // they explain it.
 
-    std::vector<TextAST> the_list;
+    std::vector<TextAST::Box> the_list;
     bool cont = true;
 
-    auto addlit = [&](std::string piece) {
-        if (the_list.size() == 0 || !the_list.back().literalAddText(piece)) {
-            the_list.emplace_back(piece);
-        }
-    };
+    the_list.emplace_back();
+    the_list.back().push(TextAST::Line());
 
     // first, ignore currently-unimportant header
     indata += 12;
@@ -1096,46 +1089,46 @@ std::vector<TextAST> readShiftJIS_MM(std::vector<uint8_t>::iterator & indata) {
 
             switch (second) {
               case 0x00:
-                the_list.emplace_back(TextAST::Color::White);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Color::White));
                 break;
 
               case 0x01:
-                the_list.emplace_back(TextAST::Color::Red);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Red));
                 break;
 
               case 0x02:
-                the_list.emplace_back(TextAST::Color::Green);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Green));
                 break;
 
               case 0x03:
-                the_list.emplace_back(TextAST::Color::Blue);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Blue));
                 break;
 
               case 0x04:
-                the_list.emplace_back(TextAST::Color::Yellow);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Yellow));
                 break;
 
               case 0x05:
-                the_list.emplace_back(TextAST::Color::Cyan);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Cyan));
                 break;
 
               case 0x06:
-                the_list.emplace_back(TextAST::Color::Magenta);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Magenta));
                 break;
 
               case 0x07:
-                the_list.emplace_back(TextAST::Color::Gray);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Gray));
                 break;
 
               case 0x08:
-                the_list.emplace_back(TextAST::Color::Orange);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Color::Orange));
                 break;
 
               default:
                 // we'll take it as the space standard Shift-JIS says it
                 // is. We'll also give back the second byte, since it's not ours
                 // it turns out.
-                addlit(" ");
+                the_list.back().curline().addMoreText(" ");
                 indata--;
                 break;
             }
@@ -1151,7 +1144,7 @@ std::vector<TextAST> readShiftJIS_MM(std::vector<uint8_t>::iterator & indata) {
                 if (third == 0x00) {
                     fourth = *indata++;
 
-                    the_list.emplace_back(TextAST::Type::Multispace, fourth);
+                    the_list.back().curline().push(TextAST::Fragment(TextAST::Type::Multispace, fourth));
                 } else {
                     throw X::Text::BadSequence({first, second, third});
                 }
@@ -1159,24 +1152,25 @@ std::vector<TextAST> readShiftJIS_MM(std::vector<uint8_t>::iterator & indata) {
 
               case 0x09:
               case 0x0B: // XXX not the same?
-                the_list.emplace_back(TextAST::Type::NewBox);
+                the_list.emplace_back();
+                the_list.back().push(TextAST::Line());
                 break;
 
               case 0x0A:
-                addlit("\n");
+                the_list.back().push(TextAST::Line());
                 break;
 
               case 0x0C:
-                the_list.emplace_back(TextAST::Type::CarriageReturn);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::CarriageReturn));
                 break;
 
               case 0x20:
-                addlit(" "); // MM shift-jis is weird
+                the_list.back().curline().addMoreText(" "); // MM shift-jis is weird
                 break;
 
               default:
                 // give as null, and give back second
-                addlit("\0");
+                the_list.back().curline().addMoreText("\0");
                 indata--;
                 break;
             }
@@ -1187,116 +1181,115 @@ std::vector<TextAST> readShiftJIS_MM(std::vector<uint8_t>::iterator & indata) {
 
             switch (second) {
               case 0x1C:
-                the_list.emplace_back(TextAST::Type::NumFairiesGot);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::NumFairiesGot));
                 break;
 
               case 0x1D:
                 // XXX want different type (see in ASCII)
-                the_list.emplace_back(TextAST::Type::NumGoldSkulls);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::NumGoldSkulls));
                 break;
 
               case 0x40:
-                the_list.emplace_back(TextAST::Type::NoSkipping);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::NoSkipping));
                 break;
 
               case 0x01:
-                the_list.emplace_back(TextAST::Type::FailedSongX);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::FailedSongX));
                 break;
 
               case 0x02:
-                the_list.emplace_back(TextAST::Type::TwoChoices);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::TwoChoices));
                 break;
 
               case 0x03:
-                the_list.emplace_back(TextAST::Type::ThreeChoices);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ThreeChoices));
                 break;
 
               case 0x04:
-                the_list.emplace_back(TextAST::Type::PostmanGameTime);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::PostmanGameTime));
                 break;
 
               case 0x07:
-                the_list.emplace_back(TextAST::Type::TimeLeftInFight);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::TimeLeftInFight));
                 break;
 
               case 0x08:
-                the_list.emplace_back(TextAST::Type::DekuFlowerGameScore);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::DekuFlowerGameScore));
                 break;
 
               case 0x0B:
-                the_list.emplace_back(TextAST::Type::ShootingGalleryScore);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ShootingGalleryScore));
                 break;
 
               case 0x0C:
-                the_list.emplace_back(TextAST::Type::BankRupeePrompt);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::BankRupeePrompt));
                 break;
 
               case 0x0D:
-                the_list.emplace_back(TextAST::Type::ShowRupeesGiven);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ShowRupeesGiven));
                 break;
 
               case 0x0E:
-                the_list.emplace_back(TextAST::Type::ShowRupeesEarned);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ShowRupeesEarned));
                 break;
 
               case 0x0F:
-                // XXX separate type?
-                the_list.emplace_back(TextAST::Type::WorldTime);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::TimeLeft));
                 break;
 
               case 0x20:
-                the_list.emplace_back(TextAST::Type::LotteryRupeePrompt);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::LotteryRupeePrompt));
                 break;
 
               case 0x21:
-                the_list.emplace_back(TextAST::Type::BomberCodePrompt);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::BomberCodePrompt));
                 break;
 
               case 0x22:
-                the_list.emplace_back(TextAST::Type::WaitOnItem);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::WaitOnItem));
                 break;
 
               case 0x24:
-                the_list.emplace_back(TextAST::Type::SoaringDestination);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::SoaringDestination));
                 break;
 
               case 0x25:
-                the_list.emplace_back(TextAST::Type::LotteryGuessPrompt);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::LotteryGuessPrompt));
                 break;
 
               case 0x26:
-                the_list.emplace_back(TextAST::Type::OceanSpiderMaskOrder);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::OceanSpiderMaskOrder));
                 break;
 
               case 0x27:
               case 0x28:
               case 0x29:
               case 0x2A:
-                the_list.emplace_back(TextAST::Type::FairiesLeftIn, second - 0x26);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::FairiesLeftIn, second - 0x26));
                 break;
 
               case 0x2B:
-                the_list.emplace_back(TextAST::Type::SwampArchScore);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::SwampArchScore));
                 break;
 
               case 0x2C:
-                the_list.emplace_back(TextAST::Type::ShowLotteryNumber);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ShowLotteryNumber));
                 break;
 
               case 0x2D:
-                the_list.emplace_back(TextAST::Type::ShowLotteryGuess);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ShowLotteryGuess));
                 break;
 
               case 0x2E:
-                the_list.emplace_back(TextAST::Type::MonetaryValue);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::MonetaryValue));
                 break;
 
               case 0x2F:
-                the_list.emplace_back(TextAST::Type::ShowBomberCode);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ShowBomberCode));
                 break;
 
               case 0x30:
-                the_list.emplace_back(TextAST::Type::EndConversation);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::EndConversation));
                 break;
 
               case 0x31:
@@ -1305,20 +1298,20 @@ std::vector<TextAST> readShiftJIS_MM(std::vector<uint8_t>::iterator & indata) {
               case 0x34:
               case 0x35:
               case 0x36:
-                the_list.emplace_back(TextAST::Type::ShowMaskColor, second & 0x0F);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::ShowMaskColor, second & 0x0F));
                 break;
 
               case 0x37:
-                the_list.emplace_back(TextAST::Type::HoursLeft);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::HoursLeft));
                 break;
 
               case 0x38:
-                the_list.emplace_back(TextAST::Type::TimeToMorning);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::TimeToMorning));
                 break;
 
               default:
                 // interpret as standard 0x02, give back second
-                addlit("\x02");
+                the_list.back().curline().addMoreText("\x02");
                 indata--;
                 break;
             }
@@ -1329,59 +1322,59 @@ std::vector<TextAST> readShiftJIS_MM(std::vector<uint8_t>::iterator & indata) {
 
             switch (second) {
               case 0x00:
-                the_list.emplace_back(TextAST::Type::PlayerName);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::PlayerName));
                 break;
 
               case 0x01:
-                the_list.emplace_back(TextAST::Type::InstantTextState, true);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::InstantTextState, true));
                 break;
 
               case 0x02:
-                the_list.emplace_back(TextAST::Type::InstantTextState, false);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::InstantTextState, false));
                 break;
 
               case 0x03:
-                the_list.emplace_back(TextAST::Type::NoSkipping_withSfx);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::NoSkipping_withSfx));
                 break;
 
               case 0x04:
-                the_list.emplace_back(TextAST::Type::StayOpen);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::StayOpen));
                 break;
 
               case 0x10:
-                the_list.emplace_back(TextAST::Type::DelayThenPrint, be_u16(indata));
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::DelayThenPrint, be_u16(indata)));
                 indata += 2;
                 break;
 
               case 0x11:
-                the_list.emplace_back(TextAST::Type::StayAfter, be_u16(indata));
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::StayAfter, be_u16(indata)));
                 indata += 2;
                 break;
 
               case 0x12:
-                the_list.emplace_back(TextAST::Type::DelayThenEndText, be_u16(indata));
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::DelayThenEndText, be_u16(indata)));
                 indata += 2;
                 break;
 
               case 0x20:
-                the_list.emplace_back(TextAST::Type::PlaySFX, be_u16(indata));
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::PlaySFX, be_u16(indata)));
                 indata += 2;
                 break;
 
               case 0x28:
                 // XXX for sure regular delay?
-                the_list.emplace_back(TextAST::Type::Delay, be_u16(indata));
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::Delay, be_u16(indata)));
                 indata += 2;
                 break;
 
               case 0x35:
                 // definitely not same as OoT trigger... maybe?
-                the_list.emplace_back(TextAST::Type::UnknownTrigger);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::UnknownTrigger));
                 break;
 
               default:
                 // literal 0x01, give back second
-                addlit("\x01");
+                the_list.back().curline().addMoreText("\x01");
                 indata--;
                 break;
             }
@@ -1391,11 +1384,11 @@ std::vector<TextAST> readShiftJIS_MM(std::vector<uint8_t>::iterator & indata) {
             second = *indata++;
 
             if (second == 0x00) {
-                the_list.emplace_back(TextAST::Type::EndMessage);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::EndMessage));
                 cont = false;
             } else {
                 // give back second, literal 0x05
-                addlit("\x05");
+                the_list.back().curline().addMoreText("\x05");
                 indata--;
             }
             break;
@@ -1405,23 +1398,23 @@ std::vector<TextAST> readShiftJIS_MM(std::vector<uint8_t>::iterator & indata) {
 
             switch (second) {
               case 0x06:
-                the_list.emplace_back(TextAST::Type::OctoArchHiscore);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::OctoArchHiscore));
                 break;
 
               case 0x09:
               case 0x07: // XXX seems to be the same, but not sure
-                the_list.emplace_back(TextAST::Type::EponaArchHiscore);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::EponaArchHiscore));
                 break;
 
               case 0x0A:
               case 0x0B:
               case 0x0C:
-                the_list.emplace_back(TextAST::Type::DekuFlowerGameDailyHiscore, second - 0x09);
+                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::DekuFlowerGameDailyHiscore, second - 0x09));
                 break;
 
               default:
                 // literal 0x03, give back second
-                addlit("\x03");
+                the_list.back().curline().addMoreText("\x03");
                 indata--;
                 break;
             }
@@ -1434,14 +1427,14 @@ std::vector<TextAST> readShiftJIS_MM(std::vector<uint8_t>::iterator & indata) {
 
                 second = *indata++;
 
-                addlit(code_to_utf8(SJIS_doubleTable.at(first).at(second)));
+                the_list.back().curline().addMoreText(code_to_utf8(SJIS_doubleTable.at(first).at(second)));
             } else if (SJIS_singleTable.count(first) == 1) {
                 // 1-byte with special mapping
 
-                addlit(code_to_utf8(SJIS_singleTable.at(first)));
+                the_list.back().curline().addMoreText(code_to_utf8(SJIS_singleTable.at(first)));
             } else {
                 // 1-byte that's not special from ASCII
-                addlit(std::string(1, first));
+                the_list.back().curline().addMoreText(std::string(1, first));
             }
             break;
         }

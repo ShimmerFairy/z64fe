@@ -11,8 +11,8 @@
 #include <vector>
 #include <cstdint>
 
-std::vector<TextAST> readASCII_OoT(std::vector<uint8_t>::iterator & indata);
-std::vector<TextAST> readShiftJIS_OoT(std::vector<uint8_t>::iterator & indata);
+std::vector<TextAST::Box> readASCII_OoT(std::vector<uint8_t>::iterator & indata);
+std::vector<TextAST::Box> readShiftJIS_OoT(std::vector<uint8_t>::iterator & indata);
 
-std::vector<TextAST> readASCII_MM(std::vector<uint8_t>::iterator & indata);
-std::vector<TextAST> readShiftJIS_MM(std::vector<uint8_t>::iterator & indata);
+std::vector<TextAST::Box> readASCII_MM(std::vector<uint8_t>::iterator & indata);
+std::vector<TextAST::Box> readShiftJIS_MM(std::vector<uint8_t>::iterator & indata);
