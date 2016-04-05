@@ -8,6 +8,7 @@
 
 #include "ROM.hpp"
 #include "Config.hpp"
+#include "TextAST.hpp"
 
 #include <QAbstractItemModel>
 
@@ -20,12 +21,12 @@ class TextIDModel : public QAbstractItemModel {
     Q_OBJECT
 
   private:
-    std::map<Config::Language, std::map<uint16_t, uint32_t>> id_maps;
+    TextAST::MessageIndex id_maps;
 
   public:
     static const unsigned int rawRole = Qt::UserRole;
 
-    TextIDModel(std::map<Config::Language, std::map<uint16_t, uint32_t>> im);
+    TextIDModel(TextAST::MessageIndex im);
 
     Qt::ItemFlags flags(const QModelIndex & index) const override;
 

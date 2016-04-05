@@ -9,6 +9,7 @@
 #include "ROM.hpp"
 #include "ROMFileModel.hpp"
 #include "Config.hpp"
+#include "TextAST.hpp"
 
 #include <QMainWindow>
 #include <QTableView>
@@ -103,6 +104,8 @@ class MainWindow : public QMainWindow {
     ROM::ROM the_rom;
 
     ROMFileModel * the_rom_model;
+
+    TextAST::MessageIndex the_midx;
 
     ROM::File curfile;
 

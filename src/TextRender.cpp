@@ -25,8 +25,9 @@ TextRender::TextRender() {
     setFrameShape(QFrame::Box);
 }
 
-void TextRender::newText(std::vector<TextAST::Box> np) {
+void TextRender::newText(TextAST::MsgInfo nmi, std::vector<TextAST::Box> np) {
     parts = np;
+    minfo = nmi;
 
     update();
 }
@@ -63,19 +64,112 @@ void TextRender::paintEvent(QPaintEvent * ev) {
         return;
     }
 
+    // first we figure out our box properties
+    QBrush boxcolor;
+    QPointF boxpos(34, 0);
+    QSizeF boxsize(256, 64);
+    qreal xrad = 8.0, yrad = 8.0;
+    QPen defColor = QColor(Qt::white);
+
+    switch (minfo.kind) {
+      case TextAST::BoxKind::BlackBox:
+        boxcolor = QColor(0, 0, 0, 0xC0);
+        break;
+
+      case TextAST::BoxKind::WoodenBox:
+        // XXX should be wood texture of some kind
+        boxcolor = QColor(0x6A, 0x43, 0x00, 0xFF);
+        break;
+
+      case TextAST::BoxKind::BlueBox:
+        boxcolor = QColor(0x19, 0x24, 0xC2, 0x80);
+        break;
+
+      case TextAST::BoxKind::OcarinaInput:
+        // this style is like BlackBox, but without rounded corners
+        boxcolor = QColor(0, 0, 0, 0xC0);
+        xrad = yrad = 0.0;
+        break;
+
+      case TextAST::BoxKind::Nothing:
+        boxcolor = Qt::transparent;
+        break;
+
+      case TextAST::BoxKind::NothingAndBlackFont:
+        boxcolor = Qt::transparent;
+        defColor = QColor(Qt::black);
+        break;
+
+      case TextAST::BoxKind::NothingAndTextTop:
+        boxcolor = Qt::transparent;
+        break;
+
+      case TextAST::BoxKind::RedBox:
+        // XXX unsure of this one, must investigate
+        boxcolor = QColor(0xFF, 0, 0, 0xC0);
+        break;
+
+      case TextAST::BoxKind::Notebook:
+        // XXX texture needed
+        boxcolor = QColor(0xEF, 0xE5, 0xB8, 0xC0);
+        defColor = QColor(Qt::black);
+        break;
+
+      case TextAST::BoxKind::InNotebook:
+        boxsize = QSizeF(284, 48);
+        xrad = 12.0;
+        boxcolor = QColor(Qt::white);
+        defColor = QColor(Qt::black);
+        boxpos.setX(19);
+        break;
+
+      case TextAST::BoxKind::MM_DEFER:
+        throw X::Text::HeaderError();
+        break;
+    }
+
+    if (minfo.kind == TextAST::BoxKind::NothingAndTextTop) {
+        boxpos.setY(38);
+    } else {
+        switch (minfo.where) {
+          case TextAST::BoxYPos::TopOrBottom:
+            // for now, just assume bottom for this one
+          case TextAST::BoxYPos::Bottom:
+            if (minfo.kind == TextAST::BoxKind::InNotebook) {
+                boxpos.setY(185);
+            } else {
+                boxpos.setY(142);
+            }
+            break;
+
+          case TextAST::BoxYPos::Top:
+            boxpos.setY(38);
+            break;
+
+          case TextAST::BoxYPos::Middle:
+            // XXX couldn't find confirming screenshot for position of centered
+            // boxes, so a reasonable value assumed
+            boxpos.setY(88);
+            break;
+
+          case TextAST::BoxYPos::MM_DEFER:
+            throw X::Text::HeaderError();
+            break;
+        }
+    }
+
     // start with our box, placed and colored appropriately (apparently the
     // x-pos is two off from center, who knows why).
-    qp.setBrush(QColor(0, 0, 0, 0xC0));
+    qp.setBrush(boxcolor);
     qp.setPen(Qt::NoPen);
 
-    qp.drawRoundedRect(34, 142, 256, 64, 4, 4);
+    qp.drawRoundedRect(QRectF(boxpos, boxsize), xrad, yrad);
 
-    // now set pen to default text color
-    qp.setPen(QColor(Qt::white));
+    qp.setPen(defColor);
 
     // set up cursor with proper initial position to let us move it relatively
     // speaking (at least in the initial setup)
-    QPointF cursor(34, 142);
+    QPointF cursor = boxpos;
 
     // text is 32px off from left edge (presumably right too, but right-aligning
     // would have to be done manually so it doesn't matter)
@@ -91,7 +185,7 @@ void TextRender::paintEvent(QPaintEvent * ev) {
                      + qfmet.leading() * (parts.front().size() - 1);
 
     // the addition of the ascent is so we have the cursor pointing at baseline.
-    cursor += QPointF(0, ((64 - textWants) / 2) + qfmet.ascent());
+    cursor += QPointF(0, ((boxsize.height() - textWants) / 2) + qfmet.ascent());
 
     // and finally, text drawing! (for now, just the first box)
 
@@ -105,7 +199,7 @@ void TextRender::paintEvent(QPaintEvent * ev) {
               case TextAST::Type::Color:
                 switch (j.getValue<TextAST::Color>()) {
                   case TextAST::Color::White:
-                    qp.setPen(QColor(Qt::white));
+                    qp.setPen(defColor);
                     break;
 
                   case TextAST::Color::Red:
@@ -117,7 +211,10 @@ void TextRender::paintEvent(QPaintEvent * ev) {
                     break;
 
                   case TextAST::Color::Blue:
-                    qp.setPen(QColor(Qt::blue));
+                    // full-blue is too saturated/dark/annoying/etc. in this
+                    // context, and OoT/MM don't go that route in the first
+                    // place.
+                    qp.setPen(QColor(0x40, 0x60, 0xC6));
                     break;
 
                   case TextAST::Color::Cyan:
@@ -241,7 +338,7 @@ void TextRender::paintEvent(QPaintEvent * ev) {
         }
 
         // now place newline
-        cursor.setX(34 + 32);
+        cursor.setX(boxpos.x() + 32);
         cursor += QPointF(0, qfmet.lineSpacing());
     }
 }

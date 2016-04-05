@@ -20,6 +20,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <sstream>
 
 MainWindow::MainWindow() {
     guiAssembleWindow();
@@ -303,22 +304,36 @@ void MainWindow::decompAndOpen() {
 }
 
 void MainWindow::analyzeTextTbl() {
-    try {
-        the_rom.analyzeMsgTbl();
-        tNumberValue->setText(QString("%1").arg(the_rom.sizeMsgTbl()));
-        tLangsValue->setText(the_rom.langStrMsgTbl().c_str());
-    } catch (Exception & e) {
-        QMessageBox::critical(this, tr("Analysis Error"),
-                              tr("%1").arg(e.what().c_str()));
+    if (the_midx.size() == 0) {
+        try {
+            the_midx = TextAST::analyzeMsgTbl(the_rom);
+            tNumberValue->setText(QString("%1").arg(the_midx.begin()->second.size()));
+
+            std::stringstream r;
+
+            size_t j = 0;
+
+            for (auto & i : the_midx) {
+                j++;
+                r << Config::langString(i.first);
+
+                if (j < the_midx.size()) {
+                    r << ", ";
+                }
+            }
+
+            tLangsValue->setText(r.str().c_str());
+        } catch (Exception & e) {
+            QMessageBox::critical(this, tr("Analysis Error"),
+                                  tr("%1").arg(e.what().c_str()));
+        }
     }
 }
 
 void MainWindow::openTextViewer() {
-    if (the_rom.sizeMsgTbl() == 0) {
-        analyzeTextTbl();
-    }
+    analyzeTextTbl();
 
-    TextViewer * newview = new TextViewer(the_rom);
+    TextViewer * newview = new TextViewer(the_rom, the_midx);
 
     connect(newview, &TextViewer::destroyed, this, &MainWindow::rmWindow);
     childWindows.push_back(newview);

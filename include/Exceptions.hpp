@@ -135,5 +135,10 @@ namespace X {
 
             std::string what();
         };
+
+        class HeaderError : public Exception {
+          public:
+            std::string what();
+        };
     }
 }

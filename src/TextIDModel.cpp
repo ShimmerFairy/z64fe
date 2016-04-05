@@ -5,7 +5,7 @@
 
 #include <iostream>
 
-TextIDModel::TextIDModel(std::map<Config::Language, std::map<uint16_t, uint32_t>> im) : id_maps(im) { }
+TextIDModel::TextIDModel(TextAST::MessageIndex im) : id_maps(im) { }
 
 Qt::ItemFlags TextIDModel::flags(const QModelIndex & index) const {
     if (!index.isValid()) {
@@ -48,7 +48,7 @@ QVariant TextIDModel::data(const QModelIndex & index, int role) const {
                                 id_maps.begin(),
                                 index.internalId() - 1
                             )->second.begin(), index.row()
-                        )->second,
+                        )->second.address,
                         6,
                         16,
                         QChar('0')).toUpper());
@@ -62,7 +62,7 @@ QVariant TextIDModel::data(const QModelIndex & index, int role) const {
         } else {
             return std::next(
                 std::next(id_maps.begin(), index.internalId() - 1)->second.begin(),
-                index.row())->second;
+                index.row())->first;
         }
     }
 

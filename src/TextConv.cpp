@@ -697,11 +697,6 @@ std::vector<TextAST::Box> readASCII_MM(std::vector<uint8_t>::iterator & indata) 
         { 0xAE, "¿"},
         { 0xAF, "ª"}};
 
-    // first we read past the header messages have, since we don't currently
-    // care about that
-
-    indata += 11;
-
     // now to read the text
 
     while (cont) {
@@ -1073,9 +1068,6 @@ std::vector<TextAST::Box> readShiftJIS_MM(std::vector<uint8_t>::iterator & indat
 
     the_list.emplace_back();
     the_list.back().push(TextAST::Line());
-
-    // first, ignore currently-unimportant header
-    indata += 12;
 
     while (cont) {
         // readability vars

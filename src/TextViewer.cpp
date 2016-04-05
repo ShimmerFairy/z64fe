@@ -16,11 +16,11 @@
 #include <iomanip>
 #include <iostream>
 
-TextViewer::TextViewer(ROM::ROM & r) : trom(&r) {
+TextViewer::TextViewer(ROM::ROM & r, TextAST::MessageIndex msgindex) : trom(&r), midx(msgindex) {
     setAttribute(Qt::WA_DeleteOnClose);
 
     idlist = new QTreeView;
-    idmod = new TextIDModel(trom->msgTbl());
+    idmod = new TextIDModel(midx);
     msgview = new QTextEdit;
     qhb = new QHBoxLayout;
     msgrend = new TextRender;
@@ -55,10 +55,12 @@ void TextViewer::chooseText(const QModelIndex & sel, const QModelIndex & /*desel
     // when an ID, not a language, is selected.
     if (sel.parent().isValid()) {
         readtxt.clear();
-        uint32_t address = idmod->data(sel, TextIDModel::rawRole).toUInt();
+        uint16_t id = idmod->data(sel, TextIDModel::rawRole).toUInt();
         Config::Language lang = static_cast<Config::Language>(idmod->data(sel.parent(), TextIDModel::rawRole).toUInt());
 
         ROM::File msgfile;
+
+        minfo = midx.at(lang).at(id);
 
         try {
             switch (lang) {
@@ -90,7 +92,7 @@ void TextViewer::chooseText(const QModelIndex & sel, const QModelIndex & /*desel
 
         std::vector<uint8_t> the_text;
 
-        auto readptr = msgfile.begin() + address;
+        auto readptr = msgfile.begin() + minfo.address;
 
         if (Config::getGame(trom->getVersion()) == Config::Game::Ocarina) {
             if (lang == Config::Language::JP) {
@@ -99,16 +101,31 @@ void TextViewer::chooseText(const QModelIndex & sel, const QModelIndex & /*desel
                 readtxt = readASCII_OoT(readptr);
             }
         } else {
+            // in the case of Majora, we have to check if the msg info was
+            // deferred (guaranteed as of now, but still good to check), and if
+            // so update our copy of minfo. Our current choice is to update
+            // everything if anything's deferred.
+            if (minfo.kind == TextAST::BoxKind::MM_DEFER || minfo.where == TextAST::BoxYPos::MM_DEFER) {
+                // read the header
+                minfo.kind = TextAST::MM_BoxKind(*readptr++);
+                minfo.where = TextAST::MM_BoxYPos(*readptr++);
+
+                // advancing the iterator past the header depends on the region,
+                // for some reason
+            }
+
             if (lang == Config::Language::JP) {
+                readptr += 10;
                 readtxt = readShiftJIS_MM(readptr);
             } else {
+                readptr += 9;
                 readtxt = readASCII_MM(readptr);
             }
         }
 
         writeCodeText();
 
-        msgrend->newText(readtxt);
+        msgrend->newText(minfo, readtxt);
     }
 }
 

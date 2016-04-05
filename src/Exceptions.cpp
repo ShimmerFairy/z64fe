@@ -101,5 +101,9 @@ namespace X {
 
             return r.str();
         }
+
+        std::string HeaderError::what() {
+            return "HE!!!";
+        }
     }
 }

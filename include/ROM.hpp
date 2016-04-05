@@ -61,8 +61,6 @@ namespace ROM {
 
         std::map<size_t, File> fcache;
 
-        std::map<Config::Language, std::map<uint16_t, uint32_t>> text_ids;
-
         Config::Version rver;
         ConfigTree ctree;
 
@@ -95,10 +93,5 @@ namespace ROM {
         bool hasConfigKey(std::initializer_list<std::string> parts) const;
 
         std::string configKey(std::initializer_list<std::string> parts) const;
-
-        void analyzeMsgTbl();
-        size_t sizeMsgTbl() const;
-        std::string langStrMsgTbl() const;
-        std::map<Config::Language, std::map<uint16_t, uint32_t>> msgTbl() const;
     };
 }

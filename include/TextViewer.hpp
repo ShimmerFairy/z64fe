@@ -28,6 +28,10 @@ class TextViewer : public QMainWindow {
 
     std::vector<TextAST::Box> readtxt;
 
+    TextAST::MessageIndex midx;
+
+    TextAST::MsgInfo minfo;
+
     QTreeView * idlist;
     TextIDModel * idmod;
 
@@ -47,5 +51,5 @@ class TextViewer : public QMainWindow {
     void chooseText(const QModelIndex & sel, const QModelIndex & desel);
 
   public:
-    TextViewer(ROM::ROM & r);
+    TextViewer(ROM::ROM & r, TextAST::MessageIndex msgindex);
 };
