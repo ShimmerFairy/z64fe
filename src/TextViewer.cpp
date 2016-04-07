@@ -101,19 +101,20 @@ void TextViewer::chooseText(const QModelIndex & sel, const QModelIndex & /*desel
                 readtxt = readASCII_OoT(readptr);
             }
         } else {
-            // in the case of Majora, we have to check if the msg info was
-            // deferred (guaranteed as of now, but still good to check), and if
-            // so update our copy of minfo. Our current choice is to update
-            // everything if anything's deferred.
-            if (minfo.kind == TextAST::BoxKind::MM_DEFER || minfo.where == TextAST::BoxYPos::MM_DEFER) {
-                // read the header
-                minfo.kind = TextAST::MM_BoxKind(*readptr++);
-                minfo.where = TextAST::MM_BoxYPos(*readptr++);
-
-                // advancing the iterator past the header depends on the region,
-                // for some reason
+            if (minfo.kind == TextAST::BoxKind::MM_DEFER) {
+                minfo.kind = TextAST::MM_BoxKind(*readptr);
             }
 
+            ++readptr;
+
+            if (minfo.where == TextAST::BoxYPos::MM_DEFER) {
+                minfo.where = TextAST::MM_BoxYPos(*readptr);
+            }
+
+            ++readptr;
+
+            // advancing the iterator past the header depends on the region,
+            // for some reason
             if (lang == Config::Language::JP) {
                 readptr += 10;
                 readtxt = readShiftJIS_MM(readptr);

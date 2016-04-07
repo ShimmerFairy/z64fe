@@ -8,6 +8,7 @@
 #include "endian.hpp"
 
 #include <sstream>
+#include <algorithm>
 
 namespace TextAST {
     Fragment::Fragment(std::string L) : ftype(Type::Literal), strval(L) { }
@@ -338,6 +339,28 @@ namespace TextAST {
         } else if (Config::getGame(therom.getVersion()) == Config::Game::Majora) {
             // note: since the message info is associated with the text itself,
             // we'll use special MsgInfo items saying as much
+
+            // first get the list of notebook IDs
+            std::vector<uint8_t> codefile;
+            ROM::File cf = therom.fileAtName("code");
+
+            if (cf.record().isCompressed()) {
+                cf = cf.decompress();
+            }
+
+            codefile = cf.getData();
+
+            size_t nboff = std::stoul(therom.configKey({"codeData", "NotebookIDList"}), nullptr, 0);
+
+            auto nbiter = codefile.begin() + nboff;
+
+            std::vector<uint16_t> nbids;
+
+            while (be_u16(nbiter) != 0) {
+                nbids.push_back(be_u16(nbiter));
+                nbiter += 2;
+            }
+
             if (Config::getRegion(therom.getVersion()) == Config::Region::EU) {
                 // for european MM roms, the addresses are in separate files,
                 // which thankfully makes this easy
@@ -347,36 +370,51 @@ namespace TextAST {
                 std::vector<uint8_t> curfile = therom.fileAtName("nes_message_table").getData();
 
                 for (auto i = curfile.begin(); i != curfile.end(); i += 8) {
-                    text_ids[Config::Language::EN][be_u16(i)] = MsgInfo(be_u32(i + 4) & 0x00FFFFFF);
+                    MsgInfo mi(be_u32(i + 4) & 0x00FFFFFF);
+
+                    if (std::find(nbids.begin(), nbids.end(), be_u16(i)) != nbids.end()) {
+                        mi.kind = TextAST::BoxKind::InNotebook;
+                    }
+
+                    text_ids[Config::Language::EN][be_u16(i)] = mi;
                 }
 
                 curfile = therom.fileAtName("ger_message_table").getData();
 
                 for (auto i = curfile.begin(); i != curfile.end(); i += 8) {
-                    text_ids[Config::Language::DE][be_u16(i)] = MsgInfo(be_u32(i + 4) & 0x00FFFFFF);
+                    MsgInfo mi(be_u32(i + 4) & 0x00FFFFFF);
+
+                    if (std::find(nbids.begin(), nbids.end(), be_u16(i)) != nbids.end()) {
+                        mi.kind = TextAST::BoxKind::InNotebook;
+                    }
+
+                    text_ids[Config::Language::DE][be_u16(i)] = mi;
                 }
 
                 curfile = therom.fileAtName("fra_message_table").getData();
 
                 for (auto i = curfile.begin(); i != curfile.end(); i += 8) {
-                    text_ids[Config::Language::FR][be_u16(i)] = MsgInfo(be_u32(i + 4) & 0x00FFFFFF);
+                    MsgInfo mi(be_u32(i + 4) & 0x00FFFFFF);
+
+                    if (std::find(nbids.begin(), nbids.end(), be_u16(i)) != nbids.end()) {
+                        mi.kind = TextAST::BoxKind::InNotebook;
+                    }
+
+                    text_ids[Config::Language::FR][be_u16(i)] = mi;
                 }
 
                 curfile = therom.fileAtName("esp_message_table").getData();
 
                 for (auto i = curfile.begin(); i != curfile.end(); i += 8) {
-                    text_ids[Config::Language::ES][be_u16(i)] = MsgInfo(be_u32(i + 4) & 0x00FFFFFF);
+                    MsgInfo mi(be_u32(i + 4) & 0x00FFFFFF);
+
+                    if (std::find(nbids.begin(), nbids.end(), be_u16(i)) != nbids.end()) {
+                        mi.kind = TextAST::BoxKind::InNotebook;
+                    }
+
+                    text_ids[Config::Language::ES][be_u16(i)] = mi;
                 }
             } else {
-                std::vector<uint8_t> codefile;
-                ROM::File cf = therom.fileAtName("code");
-
-                if (cf.record().isCompressed()) {
-                    cf = cf.decompress();
-                }
-
-                codefile = cf.getData();
-
                 size_t msgoff = std::stoul(therom.configKey({"codeData", "TextMsgTable"}), nullptr, 0);
 
                 auto iter = codefile.begin() + msgoff;
@@ -392,7 +430,13 @@ namespace TextAST {
                 }
 
                 while (be_u16(iter) != 0xFFFF) {
-                    text_ids[whatlang][be_u16(iter)] = be_u32(iter + 4) & 0x00FFFFFF;
+                    MsgInfo mi(be_u32(iter + 4) & 0x00FFFFFF);
+
+                    if (std::find(nbids.begin(), nbids.end(), be_u16(iter)) != nbids.end()) {
+                        mi.kind = TextAST::BoxKind::InNotebook;
+                    }
+
+                    text_ids[whatlang][be_u16(iter)] = mi;
                     iter += 8;
                 }
             }
