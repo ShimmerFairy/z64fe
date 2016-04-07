@@ -120,7 +120,12 @@ namespace ROM {
                     rr.fname = ctree.findKey({"fileList"}, QString("0x%1").arg(
                                                  QString("%1").arg(rr.vstart, 8, 16, QChar('0')).toUpper()).toStdString());
                 } catch (...) {
-                    rr.fname = "";
+                    try {
+                        rr.fname = ctree.findKey({"fileList", "fakeNames"}, QString("0x%1").arg(
+                                                     QString("%1").arg(rr.vstart, 8, 16, QChar('0')).toUpper()).toStdString());
+                    } catch (...) {
+                        rr.fname = "";
+                    }
                 }
             } else {
                 rr.fname = "";
