@@ -1,147 +1,88 @@
 /** \file MainWindow.hpp
  *
- *  \brief Declares the, er, main window of the application.
+ *  \brief This file declares the main window of the application, and as such is
+ *  likely to hold only the one class.
  *
  */
 
 #pragma once
 
-#include "ROM.hpp"
-#include "ROMFileModel.hpp"
-#include "Config.hpp"
-#include "TextAST.hpp"
+#include "ROMFileWidget.hpp"
 
 #include <QMainWindow>
-#include <QTableView>
-#include <QTabWidget>
-#include <QVBoxLayout>
-#include <QGroupBox>
-#include <QMenuBar>
-#include <QAction>
-#include <QLabel>
-#include <QGridLayout>
-#include <QPushButton>
-#include <QFrame>
-#include <QToolBar>
+#include <QMdiArea>
+#include <QDockWidget>
 
 #include <cstdint>
 #include <vector>
 #include <string>
 
+/** \brief The main window of the application.
+ *
+ *  This class is the main window you see in the application. Currently we use a
+ *  MDI interface to neatly handle all the things you might do in the program;
+ *  using subwindows gives us both the flexibility of top-level windows with the
+ *  inherently more-interconnected nature of child widgets (at least visually,
+ *  but most likely functionally too).
+ *
+ *  In the past, before this MDI interface, and in the possible future where
+ *  there's a choice between MDI or SDI, this main window would instead hold the
+ *  file list, and a tabbed section allowing the viewing of various kinds of
+ *  info.
+ *
+ */
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
   private:
-    std::vector<QWidget *> childWindows;
+    QMdiArea * main_portal; ///< The area where child windows appear
 
-    /*******************************
-     * INTRODUCTION SCREEN WIDGETS *
-     *******************************/
+    QDockWidget * file_list_dock; ///< Holds the file list and operations on those files
+    QDockWidget * rom_info_dock;  ///< Holds info on the ROM and any operations on said ROM
+    QDockWidget * text_data_dock; ///< Holds info on and allows viewing of text data
 
-    QWidget * introdummy;
-    QVBoxLayout * introqvb;
-    QLabel * introlbl;
-    QLabel * introsublbl;
-    QPushButton * introload;
+    ROMFileWidget * file_list_widget; ///< Actual widget for file_list_dock
 
-    /**************************
-     * REGULAR SCREEN WIDGETS *
-     **************************/
+    QMenu * file_menu; ///< The "File" option on the menu bar
 
-    QWidget * dummy;
+    QToolBar * actions_toolbar; ///< The main toolbar of the window
 
-    QVBoxLayout * qvb;
+    QAction * load_rom;  ///< Action for loading a ROM file
+    QAction * exit_prog; ///< Action for exiting the program
 
-    QTableView * filesView;
-
-    QTabWidget * control_panel;
-
-    QWidget * rom_tab;
-    QWidget * basic_file_tab;
-    QWidget * text_tab;
-
-    QGridLayout * rigrid;
-    QLabel * rnamekey;
-    QLabel * rnameval;
-    QLabel * rcodekey;
-    QLabel * rcodeval;
-    QLabel * rsizekey;
-    QLabel * rsizeval;
-    QLabel * rversionkey;
-    QLabel * rversionval;
-    QPushButton * savebs;
-
-    QGridLayout * figrid;
-    QLabel * fplockey;
-    QLabel * fplocval;
-    QLabel * fpsizekey;
-    QLabel * fpsizeval;
-    QLabel * fvlockey;
-    QLabel * fvlocval;
-    QLabel * fvsizekey;
-    QLabel * fvsizeval;
-    QLabel * fcmprkey;
-    QLabel * fcmprval;
-    QLabel * femptykey;
-    QLabel * femptyval;
-    QPushButton * hexviewbtn;
-    QPushButton * decompviewbtn;
-
-    QGridLayout * tigrid;
-    QLabel * tNumberKey;
-    QLabel * tNumberValue;
-    QLabel * tLangsKey;
-    QLabel * tLangsValue;
-    QPushButton * tReadTbl;
-    QPushButton * tSeeText;
-
-    QMenu * fileMenu;
-    QAction * actOpen;
-    QAction * actQuit;
-
-    QToolBar * actBar;
-
-    ROM::ROM the_rom;
-
-    ROMFileModel * the_rom_model;
-
-    TextAST::MessageIndex the_midx;
-
-    ROM::File curfile;
-
-    void processROM(std::string fileName);
-
-    QFrame * makeGridLine(Qt::Orientation orient);
-
-    // function to handle separate parts of the GUI, implemented in separate
-    // file
-    void guiIntroScreen();
-    void guiMakeMenu();
-    void guiMakeLister();
-    void guiMakeROMTab();
-    void guiMakeFileTab();
-    void guiMakeTextTab();
-    void guiAssembleWindow();
-
-    void guiNewROM_TextTab();
+    ROM::ROM * the_rom; ///< ROM file currently in use (this class owns the pointer)
 
   private slots:
+    /** \brief Qt slot for opening a ROM
+     *
+     *  This slot performs the opening of a ROM file. Specifically, it will
+     *  first ask for a file to open (via the standard dialog box), and then it
+     *  will perform the parts of the loading operation it needs to do. (The
+     *  actual ROM processing is handled elsewhere.)
+     *
+     */
     void openROM();
-    void saveROM();
 
-    void chooseFile(const QModelIndex & cur, const QModelIndex & old);
+  protected:
+    /** \brief Reimplementation of Qt close event
+     *
+     *  This lets us handle the process for closing the application in a central
+     *  manner, whether closed through the \c exit_prog action, or via the
+     *  window manager (e.g. the "X" in your titlebar).
+     *
+     */
+    virtual void closeEvent(QCloseEvent * ev) override;
 
-    void openRawView();
-    void decompAndOpen();
-
-    void analyzeTextTbl();
-    void openTextViewer();
-
-    void rmWindow(QObject * item);
-
-  public slots:
-    void close();
+  signals:
+    void romChanged(ROM::ROM * tr);
 
   public:
+    /** \brief Constructs the window to prepare for being shown.
+     *
+     *  This function simply does all the preparatory work in setting up the GUI
+     *  (since we don't use .ui files or QtQuick or whatever for constructing
+     *  GUIs)
+     *
+     */
     MainWindow();
 };

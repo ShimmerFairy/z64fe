@@ -53,20 +53,47 @@ namespace ROM {
     std::vector<uint8_t>::iterator File::begin() { return fileData.begin(); }
     std::vector<uint8_t>::iterator File::end() { return fileData.end(); }
 
-    ROM::ROM(const std::vector<uint8_t> & rd) : rawData(rd) { }
+    ROM::ROM(std::vector<uint8_t> rfile) : rawData(rfile) {
+        // first we want to find "zelda@", or for a byteswapped ROM "ezdl@a"
 
-    void ROM::byteSwap() {
-        for (size_t i = 0; i < rawData.size(); i += 2) {
-            std::swap(rawData[i], rawData[i+1]);
+        // note that this method currently penalizes a byteswapped ROM, but
+        // that's fair considering byteswapping is dumb.
+
+        std::string curmagic = "zelda@";
+
+        auto magicptr = std::search(rawData.begin(), rawData.end(),
+                                    curmagic.begin(), curmagic.end());
+
+        if (magicptr == rawData.end()) {
+            curmagic = "ezdl@a";
+            magicptr = std::search(rawData.begin(), rawData.end(),
+                                   curmagic.begin(), curmagic.end());
+        }
+
+        if (magicptr == rawData.end()) {
+            throw X::ROM::NoMagic();
+        }
+
+        if (curmagic == "ezdl@a") {
+            // let's un-byteswap and mark that it was
+            wasBS = true;
+            unByteSwap();
+        }
+
+        // now we can bootstrap the version with the compile timestamp
+        bootstrapCompTime(magicptr - rawData.begin());
+
+        // and then the TOC
+        bootstrapTOC(magicptr - rawData.begin() + 0x30);
+    }
+
+    void ROM::unByteSwap() {
+        for (auto i = rawData.begin(); i < rawData.end(); i+=2) {
+            std::swap(*i, *(i + 1));
         }
     }
 
-    size_t ROM::bootstrapTOC(size_t firstEntry) {
-        // before anything, lets save the written compile timestamp to identify
-        // versions (we do this instead of other methods so we don't have to worry
-        // about uncompressed and compressed versions of ROMs).
-        bootstrapCompTime(firstEntry - 0x30);
-
+    void ROM::bootstrapTOC(size_t firstEntry) {
         // first, look for the TOC file's entry --- it's a lot nicer to work with a
         // definite file, instead of waiting until we run into something that
         // doesn't look like a file record.
@@ -133,53 +160,80 @@ namespace ROM {
 
             fileList.push_back(rr);
         }
-
-        // hey, we went through the toc, so now return the number of entries.
-        return fileList.size();
     }
 
-    size_t ROM::numfiles() const { return fileList.size(); }
+    bool ROM::wasByteswapped() const { return wasBS; }
 
-    File ROM::fileAt(size_t idx) {
-        if (fcache.count(idx) == 0) {
-            std::vector<uint8_t> nd;
+    size_t ROM::numFiles() const { return fileList.size(); }
 
-            std::copy(rawData.begin() + fileList.at(idx).pstart,
-                      rawData.begin() + fileList.at(idx).pstart + fileList.at(idx).psize(),
-                      std::back_inserter(nd));
-
-            fcache[idx] = File(nd, fileList.at(idx));
-        }
-
-        return fcache[idx];
+    Record ROM::recordAtNum(size_t idx) const {
+        return fileList.at(idx);
     }
 
-    File ROM::fileAtVAddr(size_t addr) {
-        auto rightFile = std::find_if(fileList.begin(), fileList.end(),
+    Record ROM::recordAtVAddress(size_t addr) const {
+        auto theRecord = std::find_if(fileList.begin(), fileList.end(),
                                       [&](const Record & a) {
                                           return a.vstart == addr;
                                       });
 
-        if (rightFile != fileList.end()) {
-            return fileAt(std::distance(fileList.begin(), rightFile));
+        if (theRecord == fileList.end()) {
+            throw X::BadIndex("virtual address, not matching any files' starting positions");
         }
 
-        throw X::BadIndex("virtual address, not matching any files' starting positions");
+        return *theRecord;
     }
 
-    File ROM::fileAtName(std::string name) {
+    Record ROM::recordAtName(std::string name) const {
+        // note: since records keep their names in them (done in the
+        // constructor), we don't have to traipse through the config tree here.
+
+        // we will however throw an error if there's no point in us trying.
         if (ctree.isEmpty()) {
             throw X::NoConfig("Finding files by name");
         }
 
-        try {
-            return fileAtVAddr(std::stoul(ctree.getValue({"fileList", name}), nullptr, 0));
-        } catch (...) {
-            return fileAtVAddr(std::stoul(ctree.getValue({"fileList", "fakeNames", name}), nullptr, 0));
+        auto theRecord = std::find_if(fileList.begin(), fileList.end(),
+                                      [&](const Record & a) {
+                                          return a.fname == name;
+                                      });
+
+        if (theRecord == fileList.end()) {
+            throw X::BadIndex("name, not matching any known filenames in this ROM");
         }
+
+        return *theRecord;
     }
 
-    Record ROM::recordAt(size_t idx) const { return fileList.at(idx); }
+    File ROM::fileAtNum(size_t idx) const {
+        Record r = recordAtNum(idx);
+        maybeCache(r);
+        return fcache[r.vstart];
+    }
+
+    File ROM::fileAtVAddress(size_t addr) const {
+        Record r = recordAtVAddress(addr);
+        maybeCache(r);
+        return fcache[addr]; // can use addr here because we know by now it's real
+    }
+
+    File ROM::fileAtName(std::string name) const {
+        Record r = recordAtName(name);
+        maybeCache(r);
+        return fcache[r.vstart];
+    }
+
+    void ROM::maybeCache(const Record & r) const {
+        if (fcache.count(r.vstart) == 0) {
+            // yes, we have to do some caching now
+            std::vector<uint8_t> nd;
+
+            std::copy(rawData.begin() + r.pstart,
+                      rawData.begin() + r.pstart + r.psize(),
+                      std::back_inserter(nd));
+
+            fcache[r.vstart] = File(nd, r);
+        }
+    }
 
     size_t ROM::size() const { return rawData.size(); }
 

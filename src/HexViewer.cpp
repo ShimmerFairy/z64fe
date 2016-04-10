@@ -26,7 +26,7 @@ int HexFileModel::columnCount(const QModelIndex & /*parent*/) const {
 QVariant HexFileModel::data(const QModelIndex & idx, int role) const {
     if (!idx.isValid()
      || idx.row() >= rowCount()
-     || (idx.row() * 16 + idx.column()) >= myfile.size()) {
+     || static_cast<unsigned int>(idx.row() * 16 + idx.column()) >= myfile.size()) {
         return QVariant();
     }
 
@@ -54,7 +54,7 @@ HexFileTextModel::HexFileTextModel(ROM::File mf) : HexFileModel(mf) { }
 QVariant HexFileTextModel::data(const QModelIndex & idx, int role) const {
     if (!idx.isValid()
      || idx.row() >= rowCount()
-     || (idx.row() * 16 + idx.column()) >= myfile.size()) {
+     || static_cast<unsigned int>(idx.row() * 16 + idx.column()) >= myfile.size()) {
         return QVariant();
     }
 
@@ -129,7 +129,7 @@ QVariant HexFileTextModel::data(const QModelIndex & idx, int role) const {
     }
 }
 
-HexViewer::HexViewer(ROM::File mf) : hfm(mf), hftm(mf), fcopy(mf) {
+HexViewer::HexViewer(ROM::File mf) : fcopy(mf), hfm(mf), hftm(mf) {
     setAttribute(Qt::WA_DeleteOnClose);
     setWindowTitle(QString("File %1-%2")
                    .arg(QString("%1").arg(mf.record().vstart, 8, 16, QChar('0')).toUpper())
@@ -160,11 +160,11 @@ HexViewer::HexViewer(ROM::File mf) : hfm(mf), hftm(mf), fcopy(mf) {
         txtside.setColumnWidth(i, qfm.width('M') * 4); // 4em columns
     }
 
-    for (size_t i = 0; i < hfm.rowCount(); i++) {
+    for (size_t i = 0; i < static_cast<unsigned int>(hfm.rowCount()); i++) {
         hexside.setRowHeight(i, qfm.height());
     }
 
-    for (size_t i = 0; i < hftm.rowCount(); i++) {
+    for (size_t i = 0; i < static_cast<unsigned int>(hftm.rowCount()); i++) {
         txtside.setRowHeight(i, qfm.height());
     }
 

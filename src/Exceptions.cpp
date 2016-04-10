@@ -44,6 +44,12 @@ namespace X {
         return trying + " needs configuration data, but we couldn't load one for this ROM. Consider helping the effort to document in config data format!";
     }
 
+    namespace ROM {
+        std::string NoMagic::what() {
+            return "Magic string not found; are you sure this is a Zelda ROM?";
+        }
+    }
+
     namespace Config {
         SyntaxError::SyntaxError(std::string e) : explain(e) { }
 

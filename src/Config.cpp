@@ -5,6 +5,7 @@
  */
 
 #include "Config.hpp"
+#include "Exceptions.hpp"
 
 #include <QStandardPaths>
 
@@ -66,6 +67,8 @@ namespace Config {
             return "Majora's Mask Debug";
             break;
         }
+
+        throw X::InternalError("missed version!");
     }
 
     std::string vFileStr(Version v) {
@@ -122,6 +125,8 @@ namespace Config {
             return "mm_debug";
             break;
         }
+
+        throw X::InternalError("missed version!");
     }
 
     Game getGame(Version v) {
@@ -148,6 +153,8 @@ namespace Config {
             return Game::UNKNOWN;
             break;
         }
+
+        throw X::InternalError("missed version!");
     }
 
     Region getRegion(Version v) {
@@ -183,6 +190,8 @@ namespace Config {
             return Region::UNKNOWN;
             break;
         }
+
+        throw X::InternalError("missed version!");
     }
 
     std::string langString(Language L) {
@@ -207,5 +216,7 @@ namespace Config {
             return "Spanish";
             break;
         }
+
+        throw X::InternalError("missed version!");
     }
 }

@@ -69,6 +69,13 @@ namespace X {
         std::string what();
     };
 
+    namespace ROM {
+        class NoMagic : public Exception {
+          public:
+            std::string what();
+        };
+    }
+
     namespace Config {
         class SyntaxError : public Exception {
           private:
