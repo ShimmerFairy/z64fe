@@ -110,7 +110,7 @@ void ROMFileWidget::selectFile(const QModelIndex & cur, const QModelIndex & /*ol
 
     vsize_val->setText(sizeToIEC(currec.vsize()).c_str());
 
-    comp_val->setText(currec.isCompressed() ? "yes" : "no");
+    comp_val->setText(currec.isCompressed() ? tr("yes") : tr("no"));
 
-    empty_val->setText(currec.isMissing() ? "yes" : "no");
+    empty_val->setText(currec.isMissing() ? tr("yes") : tr("no"));
 }

@@ -1,6 +1,7 @@
 add_executable(z64fe main.cpp
                      MainWindow.cpp ${CMAKE_SOURCE_DIR}/include/MainWindow.hpp
                      ROMFileWidget.cpp ${CMAKE_SOURCE_DIR}/include/ROMFileWidget.hpp
+                     ROMInfoWidget.cpp ${CMAKE_SOURCE_DIR}/include/ROMInfoWidget.hpp
                      ROM.cpp
                      ROMFileModel.cpp ${CMAKE_SOURCE_DIR}/include/ROMFileModel.hpp
                      utility.cpp

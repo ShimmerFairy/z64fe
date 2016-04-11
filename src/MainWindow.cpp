@@ -20,13 +20,15 @@ MainWindow::MainWindow() {
 
     main_portal = new QMdiArea(this);
 
-    file_list_widget = new ROMFileWidget;
+    file_list_widget = new ROMFileWidget(this);
+    rom_info_widget = new ROMInfoWidget(this);
 
     file_list_dock = new QDockWidget(tr("ROM Files"), this);
     rom_info_dock = new QDockWidget(tr("ROM Info"), this);
     text_data_dock = new QDockWidget(tr("Game Text"), this);
 
     file_list_dock->setWidget(file_list_widget);
+    rom_info_dock->setWidget(rom_info_widget);
 
     addDockWidget(Qt::RightDockWidgetArea, rom_info_dock);
     addDockWidget(Qt::RightDockWidgetArea, file_list_dock);
@@ -61,6 +63,7 @@ MainWindow::MainWindow() {
      ***************/
 
     connect(this, &MainWindow::romChanged, file_list_widget, &ROMFileWidget::changeROM);
+    connect(this, &MainWindow::romChanged, rom_info_widget, &ROMInfoWidget::changeROM);
 
     connect(load_rom, &QAction::triggered, this, &MainWindow::openROM);
 }

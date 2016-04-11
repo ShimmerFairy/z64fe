@@ -311,7 +311,7 @@ namespace ROM {
 
     bool ROM::hasConfigKey(std::initializer_list<std::string> parts) const {
         if (ctree.isEmpty()) {
-            return false;
+            throw X::NoConfig("Checking for presence of key");
         }
 
         try {
@@ -324,6 +324,10 @@ namespace ROM {
     }
 
     std::string ROM::configKey(std::initializer_list<std::string> parts) const {
+        if (ctree.isEmpty()) {
+            throw X::NoConfig("Key retrieval");
+        }
+
         if (!hasConfigKey(parts)) {
             return "";
         }

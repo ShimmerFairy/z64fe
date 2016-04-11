@@ -8,6 +8,7 @@
 #pragma once
 
 #include "ROMFileWidget.hpp"
+#include "ROMInfoWidget.hpp"
 
 #include <QMainWindow>
 #include <QMdiArea>
@@ -42,6 +43,7 @@ class MainWindow : public QMainWindow {
     QDockWidget * text_data_dock; ///< Holds info on and allows viewing of text data
 
     ROMFileWidget * file_list_widget; ///< Actual widget for file_list_dock
+    ROMInfoWidget * rom_info_widget;  ///< Actual widget for rom_info_dock
 
     QMenu * file_menu; ///< The "File" option on the menu bar
 

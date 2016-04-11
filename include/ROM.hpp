@@ -198,56 +198,364 @@ namespace ROM {
         [[nodiscard]] File decompress() const;
 #endif
 
+        /** \brief Returns a copy of the file's data as-is.
+         *
+         *  This function returns a copy of the vector of bytes constituting the
+         *  file's raw data. If the file is currently compressed, you will get
+         *  back a compressed vector.
+         *
+         *  \returns a \c std::vector<uint8_t> containing the file's data.
+         *
+         */
         std::vector<uint8_t> getData() const;
 
+        /** \brief Returns an iterator to the beginning of the data.
+         *
+         *  This is just "forwarding" the internal vector's begin iterator.
+         *
+         *  \returns Vector iterator
+         *
+         */
         std::vector<uint8_t>::iterator begin();
+
+        /** \brief Returns an iterator to one-past-the-end of the data.
+         *
+         *  THis just "forwards" the internal vector's end iterator.
+         *
+         *  \returns Vector iterator
+         *
+         */
         std::vector<uint8_t>::iterator end();
     };
 
+    /** \brief Class for a ROM file
+     *
+     *  This class represents one ROM file, i.e. one Z64 game. The ROM collects
+     *  all the necessary information to identify itself and its files in
+     *  construction, and loads individual files on demand. (It also memoizes
+     *  these file loads so future accesses aren't so time-consuming.)
+     *
+     *  Since this class currently loads the entirety of ROM into memory, it's
+     *  currently recommended that you don't copy ROM objects, but rather pass
+     *  around pointers or references. (Memory mapping files is being considered
+     *  for the future.)
+     *
+     */
     class ROM {
       private:
-        std::vector<uint8_t> rawData;
+        std::vector<uint8_t> rawData;          ///< Raw file data
+        std::vector<Record> fileList;          ///< List of extracted TOC entries
+        mutable std::map<size_t, File> fcache; ///< cache of files that have been previously requested
 
-        std::vector<Record> fileList;
+        Config::Version rver; ///< Programmatically determined ROM version
+        ConfigTree ctree;     ///< Config data for data hard/impossible to get out of ROM currently
 
-        mutable std::map<size_t, File> fcache;
+        bool wasBS = false;   ///< Indicates if the ROM was originally byteswapped
 
-        Config::Version rver;
-        ConfigTree ctree;
-
-        bool wasBS = false;
-
+        /** \brief Private function for handling file caching
+         *
+         *  This function takes the record of a file to retrieve, and if it
+         *  isn't cached yet does so. This is just a convenience for the caching
+         *  procedure.
+         *
+         *  \param[in] r The file's record.
+         *
+         */
         void maybeCache(const Record & r) const;
 
+        /** \brief Private function for un-byteswapping ROMs
+         *
+         *  This function de-byteswaps the raw data if need be. It does _not_
+         *  set the wasBS variable.
+         *
+         */
         void unByteSwap();
+
+        /** \brief Handles extracting info from the Table of Contents
+         *
+         *  The bootstrapping refers to finding the TOC from a known reference
+         *  point, finding its own entry in itself, and using that entry to
+         *  extract the TOC file and read it for entries.
+         *
+         *  We do it in this manner to make sure we read the entire TOC file, as
+         *  opposed to just reading until an arbitrary endpoint is reached
+         *  (which in hacked ROMs may not even be true).
+         *
+         *  \param[in] firstEntry the offset into the ROM of the TOC's first
+         *                        record.
+         *
+         */
         void bootstrapTOC(size_t firstEntry);
+
+        /** \brief Handles reading the timestamp in the file for figuring out
+         *         the version.
+         *
+         *  We use the compilation timestamp available in the ROM as the most
+         *  reliable and specific way to figure out the version of the
+         *  ROM. Other potential methods would've made it harder or impossible
+         *  to determine the precise version of the ROM.
+         *
+         *  \note Checking the CRC might be another way, it's worth looking
+         *        into. (The downside may be that the CRC doesn't have any
+         *        meaning to the game, and could \em theoretically occur in
+         *        another, non-Zelda ROM.
+         *
+         *  \param[in] strat Where to start looking for the timestamp.
+         *
+         */
         void bootstrapCompTime(size_t strat);
 
       public:
+        /** \brief Constructor for ROM object
+         *
+         *  Takes the raw data of a file and sets itself up to handle the ROM,
+         *  assuming it's a proper Zelda ROM. Exceptions can be thrown if the
+         *  file is in some way invalid.
+         *
+         *  \param[in] rfile A vector of bytes from the file in question.
+         *
+         */
         ROM(std::vector<uint8_t> rfile);
 
+        /** \brief Indicates if the file was originally byteswapped
+         *
+         *  This testing function simply tells you if the file originally handed
+         *  to this ROM object was byteswapped (mainly useful for a "save this
+         *  ROM un-byteswapped" feature).
+         *
+         *  \returns Boolean indicating if it was, in fact, byteswapped.
+         *
+         */
         bool wasByteswapped() const;
 
+        /** \brief Indicates the number of files in the ROM
+         *
+         *  This function simply returns the number of files that were in the
+         *  TOC.
+         *
+         *  \returns Number of files as \c size_t type.
+         *
+         */
         size_t numFiles() const;
 
+        /** \brief Returns the nth file in the TOC.
+         *
+         *  This is file retrieval by index into the list of extracted
+         *  records. (E.g. "the first file listed in the TOC file".) Used in
+         *  cases where we operate on TOC indices, mainly the file list shown in
+         *  the dock widget.
+         *
+         *  Bounds-checking is performed, and will raise an exception if that
+         *  check fails.
+         *
+         *  \param[in] idx The index into the TOC list.
+         *
+         *  \returns The requested file
+         *
+         *  \exception std::out_of_range The given index goes beyond the number
+         *                               of files available.
+         *
+         *  This function caches results for faster subsequent accesses.
+         *
+         */
         File fileAtNum(size_t idx) const;
+
+        /** \brief Returns the file at the specified virtual address.
+         *
+         *  This is file retrieval by a known beginning virtual address for a
+         *  file. Used in cases where, for instance, one file's data references
+         *  another via virtual address.
+         *
+         *  This function is \em not forgiving. The given address \b must be one
+         *  that was listed in the TOC as a starting virtual address. This
+         *  function will not load from an arbitrary address nor select the
+         *  "closest file", or anything else of this nature. An error will be
+         *  thrown if the address wasn't listed.
+         *
+         *  \param[in] addr The given virtual address to load.
+         *
+         *  \returns The requested file, if the address is valid.
+         *
+         *  \exception X::BadIndex The given virtual address doesn't point to
+         *                         the start of a file.
+         *
+         *  This function caches results for faster subsequent accesses.
+         *
+         */
         File fileAtVAddress(size_t addr) const;
+
+        /** \brief Returns the file with the given name.
+         *
+         *  This is file retrieval by a known human-readable name for the
+         *  file. This is used cases where a specific file is needed regardless
+         *  of its location between versions (e.g. message box tables).
+         *
+         *  An error will result if the name does not exist, or if a
+         *  configuration file with possible file names couldn't be found at
+         *  construction time.
+         *
+         *  \param[in] name The name of the requested file.
+         *
+         *  \returns The requested file.
+         *
+         *  \exception X::NoConfig No configuration file was found for the ROM.
+         *
+         *  \exception X::BadIndex The given name couldn't be found.
+         *
+         *  This function caches results for faster subsequent accesses.
+         *
+         */
         File fileAtName(std::string name) const;
 
+        /** \brief Returns the Record for the nth TOC entry.
+         *
+         *  This returns just the record as extracted from TOC, by index into
+         *  that TOC.
+         *
+         *  \param[in] idx Index into the TOC list.
+         *
+         *  \returns The requested record.
+         *
+         *  \exception std::out_of_range Index goes outside possible number of
+         *                               files.
+         *
+         */
         Record recordAtNum(size_t idx) const;
+
+        /** \brief Returns the Record for the given starting address
+         *
+         *  This returns just the record as extracted from the TOC, based on it
+         *  having the right starting address. Inexact matches fail, an exact
+         *  and precise valid address is needed.
+         *
+         *  \param[in] addr The starting virtual address.
+         *
+         *  \returns The requested record.
+         *
+         *  \exception X::BadIndex The given virtual address doesn't point to
+         *                         the start of a file.
+         *
+         */
         Record recordAtVAddress(size_t addr) const;
+
+        /** \brief Returns the Record for the file with the given name
+         *
+         *  This returns the record whose file has the known name matching the
+         *  given one. This doesn't work if a config file couldn't be found, or
+         *  if the given name doesn't exactly match any known ones for the ROM.
+         *
+         *  \param[in] name The name requested.
+         *
+         *  \returns The requested record.
+         *
+         *  \exception X::NoConfig No configuration file was found for the ROM.
+         *
+         *  \exception X::BadIndex The given name couldn't be found.
+         *
+         */
         Record recordAtName(std::string name) const;
 
+        /** \brief The size of the ROM file.
+         *
+         *  This returns the size of the ROM's data as it was passed in, in
+         *  bytes.
+         *
+         *  \returns Size of ROM in bytes.
+         *
+         */
         size_t size() const;
 
+        /** \brief Returns the internal ROM name
+         *
+         *  This returns from the standard N64 ROM header the internal name of
+         *  the ROM.
+         *
+         *  \returns The internal ROM name.
+         *
+         */
         std::string get_rname() const;
+
+        /** \brief Returns the internal ROM code
+         *
+         *  This returns the 4-character code for the game from the standard N64
+         *  ROM header.
+         *
+         *  \warning This code does \em not uniquely identify Zelda ROMs;
+         *           multiple versions can have the same code. Use \c
+         *           getVersion() to identify the ROM by version.
+         *
+         *  \returns The 4-character internal ROM code.
+         *
+         */
         std::string get_rcode() const;
 
+        /** \brief Returns the raw ROM data as-is.
+         *
+         *  This gives a copy of the ROM's internal data, useful in cases where
+         *  we must save the ROM back to file (e.g. saving an unbyteswapped
+         *  version of the ROM).
+         *
+         *  \returns Byte vector of the ROM data.
+         *
+         */
         std::vector<uint8_t> getData() const;
 
+        /** \brief Returns the ROM's version
+         *
+         *  This function returns an enum value representing the ROM's
+         *  version. This is determined during the constructor, by examining the
+         *  compilation timestamp (see bootstrapCompTime() ).
+         *
+         *  This is the recommended way to figure out the ROM's version for
+         *  special behavior.
+         *
+         *  \returns A \c Config::Version enum value for the version.
+         *
+         */
         Config::Version getVersion() const;
 
+        /** \brief Indicates if a configuration key exists in the ROM's config
+         *         file.
+         *
+         *  This is a simple boolean test to see if the given key exists in the
+         *  config tree. An error will be raised if there is no config tree in
+         *  the first place. Otherwise, the presence of a key will return true,
+         *  absence will return false.
+         *
+         *  This is useful in cases where only the presence of the key matters
+         *  and its value is inconsequential, or when behavior has to depend on
+         *  whether a key with an important value even exists.
+         *
+         *  \param[in] parts The "path" to the config key, with the key being
+         *                   tested the last element.
+         *
+         *  \returns \c true if the key exists, or \c false if the key (or any
+         *           of the other parts leading up to the key) doesn't exist.
+         *
+         *  \exception X::BadIndex
+         *             There is no configuration file for the ROM, therefore the
+         *             result is guaranteed false. You can treat this exception
+         *             as "false" if presence of the key doesn't need to depend
+         *             on a config file being around in the first place.
+         *
+         */
         bool hasConfigKey(std::initializer_list<std::string> parts) const;
+
+        /** \brief Returns the value associated with the given config key.
+         *
+         *  This function will return the string value for the given key,
+         *  assuming the given key exists (otherwise returns empty string). Not
+         *  having a config file at all will raise an error.
+         *
+         *  \param[in] parts The "path" to the key whose value is desired.
+         *
+         *  \returns The string value for the key if it exists, or the null
+         *           string otherwise.
+         *
+         *  \exception X::BadIndex There is no configuration file to read keys
+         *                         from in the first place.
+         *
+         */
         std::string configKey(std::initializer_list<std::string> parts) const;
     };
 }
