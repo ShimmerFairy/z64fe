@@ -204,25 +204,22 @@ namespace ROM {
         return *theRecord;
     }
 
-    File ROM::fileAtNum(size_t idx) const {
+    File ROM::fileAtNum(size_t idx, bool autodecomp) const {
         Record r = recordAtNum(idx);
-        maybeCache(r);
-        return fcache[r.vstart];
+        return cachedAccess(r, autodecomp);
     }
 
-    File ROM::fileAtVAddress(size_t addr) const {
+    File ROM::fileAtVAddress(size_t addr, bool autodecomp) const {
         Record r = recordAtVAddress(addr);
-        maybeCache(r);
-        return fcache[addr]; // can use addr here because we know by now it's real
+        return cachedAccess(r, autodecomp);
     }
 
-    File ROM::fileAtName(std::string name) const {
+    File ROM::fileAtName(std::string name, bool autodecomp) const {
         Record r = recordAtName(name);
-        maybeCache(r);
-        return fcache[r.vstart];
+        return cachedAccess(r, autodecomp);
     }
 
-    void ROM::maybeCache(const Record & r) const {
+    File ROM::cachedAccess(const Record & r, bool autodecomp) const {
         if (fcache.count(r.vstart) == 0) {
             // yes, we have to do some caching now
             std::vector<uint8_t> nd;
@@ -233,6 +230,18 @@ namespace ROM {
 
             fcache[r.vstart] = File(nd, r);
         }
+
+        if (autodecomp && decfcache.count(r.vstart) == 0) {
+            // decompression will be a no-op if it's not compressed, so we don't
+            // have to specialize on compression status.
+            decfcache[r.vstart] = fcache[r.vstart].decompress();
+        }
+
+        if (autodecomp) {
+            return decfcache[r.vstart];
+        }
+
+        return fcache[r.vstart];
     }
 
     size_t ROM::size() const { return rawData.size(); }

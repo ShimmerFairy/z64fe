@@ -17,6 +17,7 @@
 #include <QTableView>
 #include <QLabel>
 #include <QPushButton>
+#include <QCheckBox>
 
 class ROMFileWidget : public QWidget {
     Q_OBJECT
@@ -42,7 +43,8 @@ class ROMFileWidget : public QWidget {
     QLabel * empty_key;
     QLabel * empty_val;
 
-    QPushButton * mk_decomp;
+    QCheckBox * want_dec;
+
     QPushButton * view_hex;
     QPushButton * save_file;
 
@@ -50,6 +52,8 @@ class ROMFileWidget : public QWidget {
     /** \brief Slot for selecting an item in the list
      */
     void selectFile(const QModelIndex & cur, const QModelIndex & old);
+
+    void saveFile();
 
   public slots:
     /** \brief Slot for when a new ROM is chosen

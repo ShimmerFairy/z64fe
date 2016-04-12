@@ -246,6 +246,7 @@ namespace ROM {
         std::vector<uint8_t> rawData;          ///< Raw file data
         std::vector<Record> fileList;          ///< List of extracted TOC entries
         mutable std::map<size_t, File> fcache; ///< cache of files that have been previously requested
+        mutable std::map<size_t, File> decfcache; ///< cache of decompressed files
 
         Config::Version rver; ///< Programmatically determined ROM version
         ConfigTree ctree;     ///< Config data for data hard/impossible to get out of ROM currently
@@ -255,13 +256,17 @@ namespace ROM {
         /** \brief Private function for handling file caching
          *
          *  This function takes the record of a file to retrieve, and if it
-         *  isn't cached yet does so. This is just a convenience for the caching
-         *  procedure.
+         *  isn't cached yet does so. It then returns the file in question.
          *
          *  \param[in] r The file's record.
          *
+         *  \param[in] autodecomp Indicates if the file should be automatically
+         *                        decompressed.
+         *
+         *  \returns A File matching the given record.
+         *
          */
-        void maybeCache(const Record & r) const;
+        File cachedAccess(const Record & r, bool autodecomp) const;
 
         /** \brief Private function for un-byteswapping ROMs
          *
@@ -350,6 +355,9 @@ namespace ROM {
          *
          *  \param[in] idx The index into the TOC list.
          *
+         *  \param[in] autodecomp Indicates if the file should be automatically
+         *                        decompressed. Default is \c true.
+         *
          *  \returns The requested file
          *
          *  \exception std::out_of_range The given index goes beyond the number
@@ -358,7 +366,7 @@ namespace ROM {
          *  This function caches results for faster subsequent accesses.
          *
          */
-        File fileAtNum(size_t idx) const;
+        File fileAtNum(size_t idx, bool autodecomp = true) const;
 
         /** \brief Returns the file at the specified virtual address.
          *
@@ -374,6 +382,9 @@ namespace ROM {
          *
          *  \param[in] addr The given virtual address to load.
          *
+         *  \param[in] autodecomp Indicates if the file should be automatically
+         *                        decompressed. Default is \c true.
+         *
          *  \returns The requested file, if the address is valid.
          *
          *  \exception X::BadIndex The given virtual address doesn't point to
@@ -382,7 +393,7 @@ namespace ROM {
          *  This function caches results for faster subsequent accesses.
          *
          */
-        File fileAtVAddress(size_t addr) const;
+        File fileAtVAddress(size_t addr, bool autodecomp = true) const;
 
         /** \brief Returns the file with the given name.
          *
@@ -396,6 +407,9 @@ namespace ROM {
          *
          *  \param[in] name The name of the requested file.
          *
+         *  \param[in] autodecomp Indicates if the file should be automatically
+         *                        decompressed. Default is \c true.
+         *
          *  \returns The requested file.
          *
          *  \exception X::NoConfig No configuration file was found for the ROM.
@@ -405,7 +419,7 @@ namespace ROM {
          *  This function caches results for faster subsequent accesses.
          *
          */
-        File fileAtName(std::string name) const;
+        File fileAtName(std::string name, bool autodecomp = true) const;
 
         /** \brief Returns the Record for the nth TOC entry.
          *

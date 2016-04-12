@@ -5,6 +5,10 @@
 #include "ROMInfoWidget.hpp"
 #include "utility.hpp"
 
+#include <QSettings>
+#include <QFileDialog>
+#include <QMessageBox>
+
 ROMInfoWidget::ROMInfoWidget(QWidget * parent) : QWidget(parent) {
     intname_key = new QLabel(tr("Internal Name:"));
     intname_val = new QLabel;
@@ -30,6 +34,12 @@ ROMInfoWidget::ROMInfoWidget(QWidget * parent) : QWidget(parent) {
     wlay->addWidget(savebs, 3, 0, 1, 2);
 
     setLayout(wlay);
+
+    /***************
+     * CONNECTIONS *
+     ***************/
+
+    connect(savebs, &QPushButton::clicked, this, &ROMInfoWidget::saveROM);
 }
 
 void ROMInfoWidget::changeROM(ROM::ROM * nr) {
@@ -47,4 +57,39 @@ void ROMInfoWidget::changeROM(ROM::ROM * nr) {
     intcode_val->setText(the_rom->get_rcode().c_str());
 
     size_val->setText(sizeToIEC(the_rom->size()).c_str());
+}
+
+void ROMInfoWidget::saveROM() {
+    QSettings qs;
+
+    QString saveto = QFileDialog::getSaveFileName(this, tr("Save ROM"),
+                                                  qs.value("main/last_save_rom").toString(),
+                                                  tr("N64 ROM Files (*.z64);;Any Files (*)"));
+
+    if (saveto == "") {
+        return;
+    }
+
+    std::ofstream writeto(saveto.toStdString(), std::ios::binary);
+
+    if (!writeto) {
+        // use parentWidget() so we don't possibly center over the dock widget
+        // awkwardly
+        QMessageBox::critical(parentWidget(), tr("Error in Saving"),
+                              tr("Couldn't open file \"%1\" for writing!").arg(saveto));
+        return;
+    }
+
+    qs.setValue("main/last_save_rom", saveto);
+
+    std::vector<uint8_t> thedata = the_rom->getData();
+
+    writeto.write(reinterpret_cast<char *>(thedata.data()), thedata.size());
+
+    if (!writeto) {
+        QMessageBox::warning(parentWidget(), tr("Possible Error in Saving"),
+                             tr("Something went wrong in writing the file, the saved file may be incomplete."));
+    }
+
+    writeto.close();
 }

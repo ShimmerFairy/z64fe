@@ -35,6 +35,9 @@ class ROMInfoWidget : public QWidget {
 
     QPushButton * savebs;
 
+  private slots:
+    void saveROM();
+
   public slots:
     void changeROM(ROM::ROM * nr);
 
