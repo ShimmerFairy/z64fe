@@ -83,6 +83,7 @@ ROMFileWidget::ROMFileWidget(QWidget * parent) : QWidget(parent) {
      ***************/
 
     connect(save_file, &QPushButton::clicked, this, &ROMFileWidget::saveFile);
+    connect(view_hex, &QPushButton::clicked, this, &ROMFileWidget::viewHexFile);
 }
 
 void ROMFileWidget::changeROM(ROM::ROM * nr) {
@@ -160,4 +161,10 @@ void ROMFileWidget::saveFile() {
     }
 
     writeto.close();
+}
+
+void ROMFileWidget::viewHexFile() {
+    ROM::File rf = the_rom->fileAtNum(filelist->currentIndex().row(), want_dec->isChecked());
+
+    wantHexWindow(rf);
 }

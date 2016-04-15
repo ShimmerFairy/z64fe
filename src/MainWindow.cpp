@@ -6,6 +6,7 @@
 
 #include "MainWindow.hpp"
 #include "Exceptions.hpp"
+#include "HexViewer.hpp"
 
 #include <QToolBar>
 #include <QMenuBar>
@@ -14,6 +15,7 @@
 #include <QFileDialog>
 #include <QFile>
 #include <QMessageBox>
+#include <QMdiSubWindow>
 
 MainWindow::MainWindow() {
     the_rom = nullptr;
@@ -66,6 +68,8 @@ MainWindow::MainWindow() {
     connect(this, &MainWindow::romChanged, rom_info_widget, &ROMInfoWidget::changeROM);
 
     connect(load_rom, &QAction::triggered, this, &MainWindow::openROM);
+
+    connect(file_list_widget, &ROMFileWidget::wantHexWindow, this, &MainWindow::makeHexWindow);
 }
 
 void MainWindow::closeEvent(QCloseEvent * ev) {
@@ -115,4 +119,9 @@ void MainWindow::openROM() {
 
     // we can now safely delete the old rom
     delete nrom;
+}
+
+void MainWindow::makeHexWindow(ROM::File rf) {
+    QByteArray qba(reinterpret_cast<char *>(rf.getData().data()), rf.size());
+    main_portal->addSubWindow(new HexViewer(qba))->show();
 }

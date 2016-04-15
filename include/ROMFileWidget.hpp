@@ -54,11 +54,17 @@ class ROMFileWidget : public QWidget {
     void selectFile(const QModelIndex & cur, const QModelIndex & old);
 
     void saveFile();
+    void viewHexFile();
 
   public slots:
     /** \brief Slot for when a new ROM is chosen
      */
     void changeROM(ROM::ROM * nr);
+
+  signals:
+    /** \brief Signal telling main window we'd like to open a hex view window.
+     */
+    void wantHexWindow(ROM::File rf);
 
   public:
     /** \brief Constructs this widget

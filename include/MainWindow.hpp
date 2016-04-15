@@ -65,6 +65,8 @@ class MainWindow : public QMainWindow {
      */
     void openROM();
 
+    void makeHexWindow(ROM::File rf);
+
   protected:
     /** \brief Reimplementation of Qt close event
      *

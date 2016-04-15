@@ -1,320 +1,158 @@
 /** \file HexViewer.cpp
  *
- *  \brief Implementing the hex viewer
+ *  \brief Implementation of hex viewing widget
  *
  */
 
 #include "HexViewer.hpp"
 
-#include <QHeaderView>
-#include <QScrollBar>
-#include <QSettings>
+#include <QFontDatabase>
 #include <QFontMetrics>
-#include <QFileDialog>
-#include <QMessageBox>
+#include <QScrollBar>
+#include <QPainter>
+#include <QApplication>
+#include <QStyle>
+#include <QResizeEvent>
 
-HexFileModel::HexFileModel(ROM::File mf) : myfile(mf) { }
+#include <cstddef>
+#include <cmath>
 
-int HexFileModel::rowCount(const QModelIndex & /*parent*/) const {
-    return ((myfile.size() - 1) / 16) + 1;
-}
+HexViewer::HexViewer(QByteArray st) : showthis(st) {
+    // first is first, set us up for a monospace font
+    setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
 
-int HexFileModel::columnCount(const QModelIndex & /*parent*/) const {
-    return 16;
-}
+    // next, let's figure out how many rows we'll have, and how many digits
+    // we'll need for the column listing offsets.
+    size_t rows = (showthis.size() - 1) / 0x10 + 1;
 
-QVariant HexFileModel::data(const QModelIndex & idx, int role) const {
-    if (!idx.isValid()
-     || idx.row() >= rowCount()
-     || static_cast<unsigned int>(idx.row() * 16 + idx.column()) >= myfile.size()) {
-        return QVariant();
-    }
+    // floating-point truncation handled by conversion to size_t
+    offsetDigits = std::log((rows - 1) * 0x10) / std::log(0x10) + 1;
 
-    if (role == Qt::DisplayRole) {
-        return QString("%1").arg(myfile.at(idx.row() * 16 + idx.column()), 2, 16, QChar('0')).toUpper();
+    // now to calculate our minimum width
+    QFontMetrics qfm(font());
+
+    // we'd like an em width, but if we can't then we'll just use the height of
+    // the font as a width
+    if (qfm.inFontUcs4(0x2003)) {
+        emWidth = qfm.width(QChar(0x2003));
     } else {
-        return QVariant();
+        emWidth = qfm.height();
     }
+
+    offsetWidth = qfm.width(QString("0x%1").arg(QString(offsetDigits, '0'))) + emWidth;
+
+    // byte width + left-of-byte space + group-of-4 extra spacing
+    hexWidth = qfm.width("00") * 16 + emWidth * 16 + emWidth * 3;
+
+    textWidth = qfm.width(QString(16, '0'));
+
+    // maybe someday we'll be nice and handle the use of horizontal
+    // scrollbar. Not today. The bit using pixelMetric is to account for the
+    // all-too-likely vertical scrollbar.
+    setMinimumWidth(offsetWidth + hexWidth + emWidth + textWidth + (emWidth / 2)
+                    + QApplication::style()->pixelMetric(QStyle::PM_ScrollBarExtent));
+
+    // now to calculate the number of lines we have per "page".
+    size_t lines_page = height() / qfm.lineSpacing();
+
+    verticalScrollBar()->setPageStep(lines_page);
+    verticalScrollBar()->setRange(0, rows - lines_page);
+
+    // now that all that's out of the way, let us set up the other parts needed
+    setFocusPolicy(Qt::StrongFocus);
 }
 
-QVariant HexFileModel::headerData(int sect, Qt::Orientation orient, int role) const {
-    if (role != Qt::DisplayRole) {
-        return QVariant();
-    }
+void HexViewer::resizeEvent(QResizeEvent * ev) {
+    QFontMetrics qfm(font());
 
-    if (orient == Qt::Horizontal) {
-        return QString("%1").arg(sect, 1, 16, QChar('0')).toUpper();
-    } else {
-        return QString("0x%1").arg(QString("%1").arg(sect * 16, 8, 16, QChar('0')).toUpper());
-    }
+    size_t lines_page = ev->size().height() / qfm.lineSpacing();
+
+    size_t rows = (showthis.size() - 1) / 0x10 + 1;
+
+    verticalScrollBar()->setPageStep(lines_page);
+    verticalScrollBar()->setRange(0, rows - lines_page);
 }
 
-HexFileTextModel::HexFileTextModel(ROM::File mf) : HexFileModel(mf) { }
+void HexViewer::paintEvent(QPaintEvent * ev) {
+    QPainter qp(viewport());
+    QFontMetrics qfm(font());
+    QPalette qpal = viewport()->palette();
 
-QVariant HexFileTextModel::data(const QModelIndex & idx, int role) const {
-    if (!idx.isValid()
-     || idx.row() >= rowCount()
-     || static_cast<unsigned int>(idx.row() * 16 + idx.column()) >= myfile.size()) {
-        return QVariant();
-    }
+    // first, fill the viewport with the correct background color for the usual
+    // text input things
+    qp.fillRect(qp.window(), qpal.base());
 
-    if (role == Qt::DisplayRole) {
-        QString res;
+    // now, to fill in the offset section and draw the divider line
+    QRect drawHere(0, 0, offsetWidth, height());
 
-        uint8_t thebyte = myfile.at(idx.row() * 16 + idx.column());
+    qp.fillRect(drawHere, qpal.window());
 
-        HexViewOpts::UnprintKind uk;
+    qp.setPen(QPen(qpal.window(), 1));
+    qp.drawLine(offsetWidth + hexWidth + (emWidth / 2), 0,
+                offsetWidth + hexWidth + (emWidth / 2), viewport()->height());
 
-        if (QSettings().value("hexview/unprint") == QVariant()) {
-            uk = HexViewOpts::UnprintKind::CARET;
-        } else {
-            uk = static_cast<HexViewOpts::UnprintKind>(QSettings().value("hexview/unprint").toInt());
+    // and now for writing down text
+
+    for (size_t i = 0; i < verticalScrollBar()->pageStep(); i++) {
+        if ((i + verticalScrollBar()->value()) * 0x10 >= showthis.size()) {
+            break;
         }
 
-        if (thebyte <= 0x1F) {
-            switch (uk) {
-              case HexViewOpts::UnprintKind::CARET:
-                res = QString("^%1").arg(QChar(thebyte + 0x40));
-                break;
 
-              case HexViewOpts::UnprintKind::ABBR:
-                res = abbrtbl.at(thebyte);
-                break;
+        qp.setPen(QPen(qpal.windowText(), 1));
+        QPoint linecurse(emWidth / 2,
+                         qfm.lineSpacing() * i + qfm.ascent());
 
-              case HexViewOpts::UnprintKind::DOT:
-                res = ".";
+        qp.drawText(linecurse, QString("0x%1").arg(
+                        QString("%1").arg(
+                            (i + verticalScrollBar()->value()) * 0x10, offsetDigits, 16, QChar('0'))
+                        .toUpper()));
+
+        // the funky emWidth - (emWidth / 2) is so we don't potentially lose a
+        // pixel due to integer division truncation (e.g. emWidth == 5)
+        linecurse.setX(offsetWidth);
+
+        // use a second cursor so we only loop through the array once
+        QPoint textcurse(linecurse);
+        textcurse += QPoint(hexWidth + emWidth, 0);
+
+        // this bit's a cheat so the byte-printing loop is a bit simpler
+        linecurse -= QPoint(emWidth, 0);
+
+        for (size_t j = 0; j < 16; j++) {
+            // if this is a group of four, start by moving 2em to the right;
+            // otherwise, 1em (hex side)
+            if (j % 4 == 0) {
+                linecurse += QPoint(emWidth * 2, 0);
+            } else {
+                linecurse += QPoint(emWidth, 0);
+            }
+
+            if ((i + verticalScrollBar()->value()) * 0x10 + j >= showthis.size()) {
                 break;
             }
-        } else if (0x20 <= thebyte && thebyte <= 0x7E) {
-            res = QChar(thebyte);
-        } else if (0x7F <= thebyte && thebyte <= 0x9F) {
-            switch (uk) {
-              case HexViewOpts::UnprintKind::CARET:
-                res = QString("^[%1").arg(QChar(thebyte - 0x40));
-                break;
 
-              case HexViewOpts::UnprintKind::ABBR:
-                res = abbrtbl.at(thebyte);
-                break;
+            uint8_t thebyte = showthis.at((i + verticalScrollBar()->value()) * 0x10 + j);
 
-              case HexViewOpts::UnprintKind::DOT:
-                res = ".";
-                break;
+            QString hexchar;
+            QString textchar;
+
+            if (thebyte < 0x20 || (0x7F <= thebyte && thebyte <= 0x9F)) {
+                textchar = ".";
+                // XXX better choice of alternate color
+                qp.setPen(QPen(qpal.link(), 1));
+            } else {
+                textchar = QChar(thebyte);
+                qp.setPen(QPen(qpal.text(), 1));
             }
-        } else if (0xA0 <= thebyte) {
-            res = QChar(thebyte);
+
+            hexchar = QString("%1").arg(QString("%1").arg(thebyte, 2, 16, QChar('0')).toUpper());
+
+            qp.drawText(linecurse, hexchar);
+            qp.drawText(textcurse, textchar);
+
+            linecurse += QPoint(qfm.width(hexchar), 0);
+            textcurse += QPoint(qfm.width(textchar), 0);
         }
-
-        return res;
-    } else if (role == Qt::ForegroundRole) {
-        uint8_t thebyte = myfile.at(idx.row() * 16 + idx.column());
-
-        HexViewOpts::UnprintKind uk;
-
-        if (QSettings().value("hexview/unprint") == QVariant()) {
-            uk = HexViewOpts::UnprintKind::CARET;
-        } else {
-            uk = static_cast<HexViewOpts::UnprintKind>(QSettings().value("hexview/unprint").toInt());
-        }
-
-        if (uk == HexViewOpts::UnprintKind::DOT
-            && (thebyte < 0x20
-                || (0x7F <= thebyte && thebyte <= 0x9F))) {
-            return QColor(Qt::magenta);
-        } else {
-            return QVariant();
-        }
-    } else {
-        return QVariant();
-    }
-}
-
-HexViewer::HexViewer(ROM::File mf) : fcopy(mf), hfm(mf), hftm(mf) {
-    setAttribute(Qt::WA_DeleteOnClose);
-    setWindowTitle(QString("File %1-%2")
-                   .arg(QString("%1").arg(mf.record().vstart, 8, 16, QChar('0')).toUpper())
-                   .arg(QString("%1").arg(mf.record().vend, 8, 16, QChar('0')).toUpper()));
-
-    hexside.setFont(QFont("monospace"));
-    txtside.setFont(QFont("monospace"));
-
-    hexside.setModel(&hfm);
-    txtside.setModel(&hftm);
-
-    hexside.horizontalHeader()->setResizeContentsPrecision(1);
-    hexside.horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-    hexside.verticalHeader()->setResizeContentsPrecision(1);
-    hexside.verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-
-    txtside.horizontalHeader()->setResizeContentsPrecision(1);
-    txtside.horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-    txtside.verticalHeader()->setResizeContentsPrecision(1);
-    txtside.verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-
-    // we'll set the sizes ourselves, thanks to the relative consistency of
-    // monospace characters
-    QFontMetrics qfm(QFont("monospace"));
-
-    for (size_t i = 0; i < 16; i++) {
-        hexside.setColumnWidth(i, qfm.width('M') * 3); // 3em columns
-        txtside.setColumnWidth(i, qfm.width('M') * 4); // 4em columns
-    }
-
-    for (size_t i = 0; i < static_cast<unsigned int>(hfm.rowCount()); i++) {
-        hexside.setRowHeight(i, qfm.height());
-    }
-
-    for (size_t i = 0; i < static_cast<unsigned int>(hftm.rowCount()); i++) {
-        txtside.setRowHeight(i, qfm.height());
-    }
-
-    // synchronize vertical scrollbars
-    connect(hexside.verticalScrollBar(), &QAbstractSlider::valueChanged,
-            txtside.verticalScrollBar(), &QAbstractSlider::setValue);
-
-    connect(txtside.verticalScrollBar(), &QAbstractSlider::valueChanged,
-            hexside.verticalScrollBar(), &QAbstractSlider::setValue);
-
-    txtside.verticalHeader()->hide();
-
-    hexside.setAlternatingRowColors(true);
-    txtside.setAlternatingRowColors(true);
-
-    dumwidg = new QWidget;
-    hbl = new QHBoxLayout(dumwidg);
-
-    hbl->addWidget(&hexside);
-    hbl->addWidget(&txtside);
-
-    dumwidg->setLayout(hbl);
-
-    setCentralWidget(dumwidg);
-
-    // set up the menu
-
-    fileMenu = menuBar()->addMenu(tr("&File"));
-
-    saveItem = fileMenu->addAction(tr("&Save this file..."));
-    fileMenu->addAction(saveItem);
-
-    toolsMenu = menuBar()->addMenu(tr("&Tools"));
-
-    optionsItem = toolsMenu->addAction(tr("&Options..."));
-    toolsMenu->addAction(optionsItem);
-
-    connect(saveItem, &QAction::triggered, this, &HexViewer::saveFile);
-    connect(optionsItem, &QAction::triggered, this, &HexViewer::doOptions);
-}
-
-void HexViewer::saveFile() {
-    QSettings qs;
-    QString defName = qs.value("hexview/lastfile", QString()).toString();
-
-    QString saveTo = QFileDialog::getSaveFileName(this, tr("Save File"),
-                                                  defName,
-                                                  tr("Zelda 64 files, unspecified (*.zdata);;All files (*)"));
-
-    std::string savname = saveTo.toStdString();
-
-    std::ofstream ofile(savname, std::ios_base::binary);
-
-    if (!ofile) {
-        QMessageBox::critical(this, "Z64Fe",
-                              tr("Can't open %1 for saving. Not saving.").arg(savname.c_str()));
-        return;
-    }
-
-    std::vector<uint8_t> filedata = fcopy.getData();
-
-    ofile.write(reinterpret_cast<char*>(filedata.data()), filedata.size());
-
-    if (!ofile) {
-        QMessageBox::warning(this, "Z64Fe",
-                             tr("Error occurred while writing file. Written file may not be complete."));
-    }
-}
-
-void HexViewer::doOptions() {
-    HexViewOpts(this).exec();
-}
-
-
-HexViewOpts::HexViewOpts(QWidget * parent) : QDialog(parent) {
-    unprint_opts = new QGroupBox(tr("Unprintable Chars"));
-
-    caret_opt = new QRadioButton(tr("&Caret notation (^@ etc.)"), unprint_opts);
-    abbr_opt = new QRadioButton(tr("&Symbol abbreviations (NUL etc.)"), unprint_opts);
-    colordot_opt = new QRadioButton(tr("&Colored period characters"), unprint_opts);
-
-    caret_opt->setWhatsThis(tr("Use caret notation for unprintable characters, a popular choice in things like terminals. The carets can however be noisy in a lot of non-textual data."));
-
-    abbr_opt->setWhatsThis(tr("Uses two- or three-letter abbreviations to represent unprintable characters, such as <tt>NUL</tt> for null, <tt>FS</tt> for file separator, and so on. Can be more descriptive at-a-glance, but can also crowd the text side of the viewer a bit."));
-
-    colordot_opt->setWhatsThis(tr("Uses a period (<tt>.</tt>) for all unprintable characters. To distinguish them from actual periods (<tt>0x2E</tt>), these special periods are in a different font color. This may be the least noisy option, but it requires looking at the hex side to see the actual data."));
-
-    unprint_opts->setWhatsThis(tr("Choose how to handle unprintable characters in the text side of the file viewer. \"Unprintable\" characters are those which have no visible glyph associated with them when printed directly, such as newline characters and various control codes. Spaces are considered graphical, not unprintable, characters, at least in this case."));
-
-    unprint_box = new QVBoxLayout;
-
-    unprint_box->addWidget(caret_opt);
-    unprint_box->addWidget(abbr_opt);
-    unprint_box->addWidget(colordot_opt);
-
-    unprint_opts->setLayout(unprint_box);
-
-    grps = new QVBoxLayout;
-
-    grps->addWidget(unprint_opts);
-
-    setLayout(grps);
-
-    setWindowTitle(tr("Hex Viewer Options"));
-
-    QSettings qs;
-
-    if (qs.value("hexview/unprint") == QVariant()) {
-        caret_opt->setChecked(true);
-    } else {
-        UnprintKind uk = static_cast<UnprintKind>(qs.value("hexview/unprint").toInt());
-
-        switch (uk) {
-          case UnprintKind::CARET:
-            caret_opt->setChecked(true);
-            break;
-          case UnprintKind::ABBR:
-            abbr_opt->setChecked(true);
-            break;
-          case UnprintKind::DOT:
-            colordot_opt->setChecked(true);
-            break;
-        }
-    }
-
-    // make the connections on radio buttons _now_, so we don't possibly fire
-    // them when initially setting them above.
-
-    connect(caret_opt,    &QRadioButton::toggled, this, &HexViewOpts::chooseUnprintCaret);
-    connect(abbr_opt,     &QRadioButton::toggled, this, &HexViewOpts::chooseUnprintAbbr);
-    connect(colordot_opt, &QRadioButton::toggled, this, &HexViewOpts::chooseUnprintDot);
-}
-
-void HexViewOpts::chooseUnprintCaret(bool on) {
-    if (on) {
-        QSettings qs;
-        qs.setValue("hexview/unprint", static_cast<int>(UnprintKind::CARET));
-    }
-}
-
-void HexViewOpts::chooseUnprintAbbr(bool on) {
-    if (on) {
-        QSettings qs;
-        qs.setValue("hexview/unprint", static_cast<int>(UnprintKind::ABBR));
-    }
-}
-
-void HexViewOpts::chooseUnprintDot(bool on) {
-    if (on) {
-        QSettings qs;
-        qs.setValue("hexview/unprint", static_cast<int>(UnprintKind::DOT));
     }
 }
