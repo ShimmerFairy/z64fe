@@ -343,4 +343,15 @@ namespace ROM {
 
         return ctree.getValue(parts);
     }
+
+    std::pair<uint32_t, uint32_t> ROM::getCRC() const {
+        std::pair<uint32_t, uint32_t> cpair;
+
+        auto riter = rawData.begin() + 0x10;
+
+        cpair.first  = be_u32(riter); riter += 4;
+        cpair.second = be_u32(riter);
+
+        return cpair;
+    }
 }

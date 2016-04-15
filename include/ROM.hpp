@@ -571,5 +571,15 @@ namespace ROM {
          *
          */
         std::string configKey(std::initializer_list<std::string> parts) const;
+
+        /** \brief Returns the two CRC values from the header.
+         *
+         *  Returns the two 32-bit values in the header that help verify at
+         *  least a portion of the ROM.
+         *
+         *  \returns A \c std::pair holding the two values, in order.
+         *
+         */
+        std::pair<uint32_t, uint32_t> getCRC() const;
     };
 }

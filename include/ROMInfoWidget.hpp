@@ -32,6 +32,8 @@ class ROMInfoWidget : public QWidget {
     QLabel * intcode_val;
     QLabel * size_key;
     QLabel * size_val;
+    QLabel * crc_key;
+    QLabel * crc_val;
 
     QPushButton * savebs;
 

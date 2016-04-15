@@ -57,14 +57,4 @@ namespace Config {
     };
 
     std::string langString(Language L);
-
-    enum class CodeTbl {
-        Messages,
-    };
-
-    const std::map<Version, std::map<CodeTbl, uint32_t>> codeFileTables{
-        { Version::OOT_MQ_DEBUG, {
-                { CodeTbl::Messages, 0x12E4C0 }}},
-        { Version::OOT_NTSC_1_0, {
-                { CodeTbl::Messages, 0x0F98AC }}}};
 }

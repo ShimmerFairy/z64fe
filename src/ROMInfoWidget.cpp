@@ -8,6 +8,7 @@
 #include <QSettings>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QFontDatabase>
 
 ROMInfoWidget::ROMInfoWidget(QWidget * parent) : QWidget(parent) {
     intname_key = new QLabel(tr("Internal Name:"));
@@ -16,6 +17,10 @@ ROMInfoWidget::ROMInfoWidget(QWidget * parent) : QWidget(parent) {
     intcode_val = new QLabel;
     size_key = new QLabel(tr("Size:"));
     size_val = new QLabel;
+    crc_key = new QLabel(tr("CRC:"));
+    crc_val = new QLabel;
+
+    crc_val->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
 
     savebs = new QPushButton(tr("No ROM Loaded"));
     savebs->setEnabled(false);
@@ -31,7 +36,10 @@ ROMInfoWidget::ROMInfoWidget(QWidget * parent) : QWidget(parent) {
     wlay->addWidget(size_key, 2, 0, 1, 1, Qt::AlignRight);
     wlay->addWidget(size_val, 2, 1, 1, 1, Qt::AlignLeft);
 
-    wlay->addWidget(savebs, 3, 0, 1, 2);
+    wlay->addWidget(crc_key, 3, 0, 1, 1, Qt::AlignRight);
+    wlay->addWidget(crc_val, 3, 1, 1, 1, Qt::AlignLeft);
+
+    wlay->addWidget(savebs, 4, 0, 1, 2);
 
     setLayout(wlay);
 
@@ -57,6 +65,11 @@ void ROMInfoWidget::changeROM(ROM::ROM * nr) {
     intcode_val->setText(the_rom->get_rcode().c_str());
 
     size_val->setText(sizeToIEC(the_rom->size()).c_str());
+
+    crc_val->setText(QString("%1 %2").arg(
+                         QString("%1").arg(the_rom->getCRC().first, 8, 16, QChar('0')).toUpper())
+                     .arg(
+                         QString("%1").arg(the_rom->getCRC().second, 8, 16, QChar('0')).toUpper()));
 }
 
 void ROMInfoWidget::saveROM() {
