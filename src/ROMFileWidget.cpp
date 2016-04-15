@@ -11,6 +11,7 @@
 #include <QSettings>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QFontDatabase>
 
 ROMFileWidget::ROMFileWidget(QWidget * parent) : QWidget(parent) {
     the_model = nullptr;
@@ -42,7 +43,7 @@ ROMFileWidget::ROMFileWidget(QWidget * parent) : QWidget(parent) {
     view_hex  = new QPushButton(tr("&View Raw File"));
     save_file = new QPushButton(tr("&Save Individual File..."));
 
-    QFont monfont("monospace");
+    QFont monfont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
 
     vloc_val->setFont(monfont);
     vsize_val->setFont(monfont);
