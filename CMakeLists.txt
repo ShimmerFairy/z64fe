@@ -10,6 +10,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt5Widgets)
+find_package(Qt5Concurrent)
 
 find_package(Doxygen)
 option(BUILD_DOCUMENTATION "Build Doxygen-generated API documentation" ${DOXYGEN_FOUND})

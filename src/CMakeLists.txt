@@ -16,4 +16,4 @@ add_executable(z64fe main.cpp
                      TextConv.cpp
                      TextAST.cpp
                      TextRender.cpp ${CMAKE_SOURCE_DIR}/include/TextRender.hpp)
-target_link_libraries(z64fe Qt5::Widgets)
+target_link_libraries(z64fe Qt5::Widgets Qt5::Concurrent)

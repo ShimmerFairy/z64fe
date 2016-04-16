@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <array>
 
 namespace ROM {
     bool Record::isCompressed() const { return pend != 0 && !isMissing(); }
@@ -344,13 +345,68 @@ namespace ROM {
         return ctree.getValue(parts);
     }
 
-    std::pair<uint32_t, uint32_t> ROM::getCRC() const {
-        std::pair<uint32_t, uint32_t> cpair;
+    ROM::CRCPair ROM::getCRC() const {
+        CRCPair cpair;
 
         auto riter = rawData.begin() + 0x10;
 
         cpair.first  = be_u32(riter); riter += 4;
         cpair.second = be_u32(riter);
+
+        return cpair;
+    }
+
+    ROM::CRCPair ROM::calcCRC() const {
+        // yes, it overflows, but we want to chop it off to 32-bits anyway,
+        // which will happen for us. The 'u' suffixes are so we use standardized
+        // unsigned overflow, instead of accidentally hoping UB signed overflow
+        // will magically do the right thing.
+        uint32_t seed = 0x5D588B65u * 0x91u + 1u;
+
+        // we've got six registers to use in this calculation
+        std::array<uint32_t, 6> reg; reg.fill(seed);
+
+        // the data that gets verified by the algorithm; anything past this
+        // point is free for modification.
+        std::vector<uint8_t> chkthis;
+        std::copy(rawData.begin() + 0x1000, rawData.begin() + 0x101000,
+                  std::back_inserter(chkthis));
+
+        std::vector<uint8_t> extra;
+        std::copy(rawData.begin() + 0x750, rawData.begin() + 0x850,
+                  std::back_inserter(extra));
+
+        auto iter = chkthis.begin();
+
+        while (iter < chkthis.end()) {
+            uint32_t i = be_u32(iter);
+
+            if (reg[0] + i < reg[0]) { // if this would overflow
+                reg[1]++;
+            }
+
+            uint32_t val = i & 0x1F;
+            val = (i << val) | (i >> (32 - val));
+
+            reg[0] += i;
+            reg[2] ^= i;
+            reg[3] += val;
+
+            reg[4] ^= (reg[4] < i)
+                    ? (reg[0] ^ i)
+                    : val; 
+
+            size_t exidx = std::distance(chkthis.begin(), iter) % extra.size();
+            reg[5] += i ^ be_u32(extra.begin() + exidx);
+
+            iter += 4;
+        }
+
+        // now to assimilate the six values into just two.
+        CRCPair cpair;
+
+        cpair.first  = reg[0] ^ reg[1] ^ reg[2];
+        cpair.second = reg[3] ^ reg[4] ^ reg[5];
 
         return cpair;
     }

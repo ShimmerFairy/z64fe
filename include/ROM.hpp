@@ -572,14 +572,40 @@ namespace ROM {
          */
         std::string configKey(std::initializer_list<std::string> parts) const;
 
+        /** \brief Simple typedef for \c std::pair
+         *
+         *  Just a typedef to simplify the use of this type (since the \c
+         *  std::pair thing written out is kinda unwieldy)
+         *
+         */
+        typedef std::pair<uint32_t, uint32_t> CRCPair;
+
         /** \brief Returns the two CRC values from the header.
          *
          *  Returns the two 32-bit values in the header that help verify at
          *  least a portion of the ROM.
          *
-         *  \returns A \c std::pair holding the two values, in order.
+         *  \returns A \c CRCPair holding the two values in order of appearance.
          *
          */
-        std::pair<uint32_t, uint32_t> getCRC() const;
+        CRCPair getCRC() const;
+
+        /** \brief Calculates the expected CRC values for the ROM.
+         *
+         *  This function calculates the CRC for the ROM, which can be used to
+         *  verify and/or fix the the existing CRC, or in the case of editing
+         *  the ROM recalculating the new CRC.
+         *
+         *  Note that this version of the algorithm naturally only concerns
+         *  itself with Zelda CRCs. It cannot be used for all N64 ROMs.
+         *
+         *  \returns A \c CRCPair holding the resulting two CRC values, in the
+         *           order they would be in the header.
+         *
+         *  Thanks to Zoinkity for the Python implementation from which this
+         *  implementation was adapted.
+         *
+         */
+        CRCPair calcCRC() const;
     };
 }

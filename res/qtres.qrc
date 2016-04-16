@@ -19,5 +19,7 @@
     <file>controller/buttonR.svg</file>
     <file>controller/buttonZ.svg</file>
     <file>controller/buttonSTART.svg</file>
+    <file>generic_check.svg</file>
+    <file>generic_X.svg</file>
   </qresource>
 </RCC>

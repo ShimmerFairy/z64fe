@@ -17,6 +17,7 @@
 #include <QGridLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <QFutureWatcher>
 
 class ROMInfoWidget : public QWidget {
     Q_OBJECT
@@ -34,11 +35,15 @@ class ROMInfoWidget : public QWidget {
     QLabel * size_val;
     QLabel * crc_key;
     QLabel * crc_val;
+    QLabel * crc_chk;
 
     QPushButton * savebs;
 
+    QFutureWatcher<bool> crcverify;
+
   private slots:
     void saveROM();
+    void checkedCRC();
 
   public slots:
     void changeROM(ROM::ROM * nr);

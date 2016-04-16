@@ -9,6 +9,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QFontDatabase>
+#include <QtConcurrent>
 
 ROMInfoWidget::ROMInfoWidget(QWidget * parent) : QWidget(parent) {
     intname_key = new QLabel(tr("Internal Name:"));
@@ -19,6 +20,8 @@ ROMInfoWidget::ROMInfoWidget(QWidget * parent) : QWidget(parent) {
     size_val = new QLabel;
     crc_key = new QLabel(tr("CRC:"));
     crc_val = new QLabel;
+    crc_chk = new QLabel;
+    crc_chk->setFixedSize(16, 16);
 
     crc_val->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
 
@@ -38,8 +41,9 @@ ROMInfoWidget::ROMInfoWidget(QWidget * parent) : QWidget(parent) {
 
     wlay->addWidget(crc_key, 3, 0, 1, 1, Qt::AlignRight);
     wlay->addWidget(crc_val, 3, 1, 1, 1, Qt::AlignLeft);
+    wlay->addWidget(crc_chk, 3, 2, 1, 1);
 
-    wlay->addWidget(savebs, 4, 0, 1, 2);
+    wlay->addWidget(savebs, 4, 0, 1, 3);
 
     setLayout(wlay);
 
@@ -48,6 +52,7 @@ ROMInfoWidget::ROMInfoWidget(QWidget * parent) : QWidget(parent) {
      ***************/
 
     connect(savebs, &QPushButton::clicked, this, &ROMInfoWidget::saveROM);
+    connect(&crcverify, &QFutureWatcher<bool>::finished, this, &ROMInfoWidget::checkedCRC);
 }
 
 void ROMInfoWidget::changeROM(ROM::ROM * nr) {
@@ -66,10 +71,29 @@ void ROMInfoWidget::changeROM(ROM::ROM * nr) {
 
     size_val->setText(sizeToIEC(the_rom->size()).c_str());
 
+    ROM::ROM::CRCPair actual = the_rom->getCRC();
+
     crc_val->setText(QString("%1 %2").arg(
-                         QString("%1").arg(the_rom->getCRC().first, 8, 16, QChar('0')).toUpper())
+                         QString("%1").arg(actual.first, 8, 16, QChar('0')).toUpper())
                      .arg(
-                         QString("%1").arg(the_rom->getCRC().second, 8, 16, QChar('0')).toUpper()));
+                         QString("%1").arg(actual.second, 8, 16, QChar('0')).toUpper()));
+
+    crc_chk->setPixmap(QPixmap());
+
+    // do this in a thread since there's no reason to block on CRC verification
+    crcverify.setFuture(
+        QtConcurrent::run(
+            [this](){
+                return the_rom->getCRC() == the_rom->calcCRC();
+            }));
+}
+
+void ROMInfoWidget::checkedCRC() {
+    if (crcverify.result()) {
+        crc_chk->setPixmap(QPixmap(":/generic_check.svg").scaled(16, 16));
+    } else {
+        crc_chk->setPixmap(QPixmap(":/generic_X.svg").scaled(16, 16));
+    }
 }
 
 void ROMInfoWidget::saveROM() {
