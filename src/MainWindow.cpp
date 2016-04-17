@@ -6,7 +6,7 @@
 
 #include "MainWindow.hpp"
 #include "Exceptions.hpp"
-#include "HexViewer.hpp"
+#include "Hex/Widget.hpp"
 
 #include <QToolBar>
 #include <QMenuBar>
@@ -123,5 +123,5 @@ void MainWindow::openROM() {
 
 void MainWindow::makeHexWindow(ROM::File rf) {
     QByteArray qba(reinterpret_cast<char *>(rf.getData().data()), rf.size());
-    main_portal->addSubWindow(new HexViewer(qba))->show();
+    main_portal->addSubWindow(new Hex::Widget(qba))->show();
 }

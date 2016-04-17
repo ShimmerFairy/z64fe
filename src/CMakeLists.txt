@@ -5,7 +5,6 @@ add_executable(z64fe main.cpp
                      ROM.cpp
                      ROMFileModel.cpp ${CMAKE_SOURCE_DIR}/include/ROMFileModel.hpp
                      utility.cpp
-                     HexViewer.cpp ${CMAKE_SOURCE_DIR}/include/HexViewer.hpp
                      yaz0.cpp
                      Config.cpp
                      ConfigTree.cpp
@@ -15,5 +14,7 @@ add_executable(z64fe main.cpp
                      TextIDModel.cpp ${CMAKE_SOURCE_DIR}/include/TextIDModel.hpp
                      TextConv.cpp
                      TextAST.cpp
-                     TextRender.cpp ${CMAKE_SOURCE_DIR}/include/TextRender.hpp)
+                     TextRender.cpp ${CMAKE_SOURCE_DIR}/include/TextRender.hpp
+                     Hex/Widget.cpp ${CMAKE_SOURCE_DIR}/include/Hex/Widget.hpp
+                     Hex/Cursor.cpp)
 target_link_libraries(z64fe Qt5::Widgets Qt5::Concurrent)

@@ -53,7 +53,7 @@ HexViewer::HexViewer(QByteArray st) : showthis(st) {
                     + QApplication::style()->pixelMetric(QStyle::PM_ScrollBarExtent));
 
     // now to calculate the number of lines we have per "page".
-    size_t lines_page = height() / qfm.lineSpacing();
+    lines_page = height() / qfm.lineSpacing();
 
     verticalScrollBar()->setPageStep(lines_page);
     verticalScrollBar()->setRange(0, rows - lines_page);
@@ -65,12 +65,52 @@ HexViewer::HexViewer(QByteArray st) : showthis(st) {
 void HexViewer::resizeEvent(QResizeEvent * ev) {
     QFontMetrics qfm(font());
 
-    size_t lines_page = ev->size().height() / qfm.lineSpacing();
+    lines_page = ev->size().height() / qfm.lineSpacing();
 
     size_t rows = (showthis.size() - 1) / 0x10 + 1;
 
     verticalScrollBar()->setPageStep(lines_page);
     verticalScrollBar()->setRange(0, rows - lines_page);
+}
+
+void HexViewer::keyPressEvent(QKeyEvent * ev) {
+    switch (ev->key()) {
+      case Qt::Key_Left:
+        if (cursor.col > 0) {
+            cursor.col--;
+        }
+        viewport()->update();
+        break;
+
+      case Qt::Key_Right:
+        if (cursor.col < 15) {
+            cursor.col++;
+        }
+        viewport()->update();
+        break;
+
+      case Qt::Key_Down:
+        if (cursor.row < lines_page - 1) {
+            cursor.row++;
+        } else {
+            verticalScrollBar()->setValue(verticalScrollBar()->value() + 1);
+        }
+        viewport()->update();
+        break;
+
+      case Qt::Key_Up:
+        if (cursor.row > 0) {
+            cursor.row--;
+        } else {
+            verticalScrollBar()->setValue(verticalScrollBar()->value() - 1);
+        }
+        viewport()->update();
+        break;
+
+      default:
+        QAbstractScrollArea::keyPressEvent(ev);
+        break;
+    }
 }
 
 void HexViewer::paintEvent(QPaintEvent * ev) {
@@ -155,4 +195,32 @@ void HexViewer::paintEvent(QPaintEvent * ev) {
             textcurse += QPoint(qfm.width(textchar), 0);
         }
     }
+
+    // now that the text is drawn, finally draw the cursor
+    QRect hexbox;
+    QRect txtbox;
+
+    hexbox.setY(qfm.lineSpacing() * cursor.row);
+    txtbox.setY(hexbox.y());
+
+    hexbox.setX(offsetWidth + (emWidth + qfm.width("00")) * cursor.col
+                + emWidth * (cursor.col / 4 + 1));
+    txtbox.setX(offsetWidth + hexWidth + emWidth + qfm.width("0") * cursor.col);
+
+    hexbox.setWidth(qfm.width("00"));
+    txtbox.setWidth(qfm.width("0"));
+
+    hexbox.setHeight(qfm.height());
+    txtbox.setHeight(qfm.height());
+
+    qp.setBrush(QBrush());
+    qp.setPen(QPen(qpal.text(), 1));
+
+    qp.drawRect(txtbox);
+
+    if (blinkCover) {
+        qp.setBrush(qpal.text());
+    }
+
+    qp.drawRect(hexbox);
 }
