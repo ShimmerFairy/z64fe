@@ -51,5 +51,5 @@ class TextViewer : public QMainWindow {
     void chooseText(const QModelIndex & sel, const QModelIndex & desel);
 
   public:
-    TextViewer(ROM::ROM & r, TextAST::MessageIndex msgindex);
+    TextViewer(ROM::ROM * r);
 };

@@ -11,6 +11,7 @@
 #include <QtDebug>
 #include <QIcon>
 #include <QTime>
+#include <QLinearGradient>
 
 TextRender::TextRender() {
     // set up size constraints; the +2 is for the border, so we don't lose any
@@ -62,6 +63,16 @@ void TextRender::paintEvent(QPaintEvent * ev) {
     if (parts.size() == 0) {
         qp.fillRect(0, 0, 320, 240, QBrush(Qt::BDiagPattern));
         return;
+    } else {
+        QLinearGradient qg(0, 0, 320, 240);
+        qg.setColorAt(0.0,     QColor(Qt::red).lighter());
+        qg.setColorAt(1.0/5.0, QColor(Qt::yellow).lighter());
+        qg.setColorAt(2.0/5.0, QColor(Qt::green).lighter());
+        qg.setColorAt(3.0/5.0, QColor(Qt::cyan).lighter());
+        qg.setColorAt(4.0/5.0, QColor(Qt::blue).lighter());
+        qg.setColorAt(1.0,     QColor(Qt::magenta).lighter());
+
+        qp.fillRect(0, 0, 320, 240, QBrush(qg));
     }
 
     // first we figure out our box properties

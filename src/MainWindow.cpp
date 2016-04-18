@@ -7,6 +7,7 @@
 #include "MainWindow.hpp"
 #include "Exceptions.hpp"
 #include "Hex/Widget.hpp"
+#include "TextViewer.hpp"
 
 #include <QToolBar>
 #include <QMenuBar>
@@ -27,14 +28,12 @@ MainWindow::MainWindow() {
 
     file_list_dock = new QDockWidget(tr("ROM Files"), this);
     rom_info_dock = new QDockWidget(tr("ROM Info"), this);
-    text_data_dock = new QDockWidget(tr("Game Text"), this);
 
     file_list_dock->setWidget(file_list_widget);
     rom_info_dock->setWidget(rom_info_widget);
 
     addDockWidget(Qt::RightDockWidgetArea, rom_info_dock);
     addDockWidget(Qt::RightDockWidgetArea, file_list_dock);
-    addDockWidget(Qt::RightDockWidgetArea, text_data_dock);
 
     load_rom = new QAction(QIcon::fromTheme("document-open", QIcon(":/icons/document-open.svg")),
                            tr("&Open ROM..."),
@@ -70,6 +69,7 @@ MainWindow::MainWindow() {
     connect(load_rom, &QAction::triggered, this, &MainWindow::openROM);
 
     connect(file_list_widget, &ROMFileWidget::wantHexWindow, this, &MainWindow::makeHexWindow);
+    connect(rom_info_widget, &ROMInfoWidget::wantTextWindow, this, &MainWindow::makeTextWindow);
 }
 
 void MainWindow::closeEvent(QCloseEvent * ev) {
@@ -124,4 +124,8 @@ void MainWindow::openROM() {
 void MainWindow::makeHexWindow(ROM::File rf) {
     QByteArray qba(reinterpret_cast<char *>(rf.getData().data()), rf.size());
     main_portal->addSubWindow(new Hex::Widget(qba))->show();
+}
+
+void MainWindow::makeTextWindow() {
+    main_portal->addSubWindow(new TextViewer(the_rom))->show();
 }

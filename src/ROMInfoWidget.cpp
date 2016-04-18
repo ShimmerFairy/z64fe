@@ -28,6 +28,9 @@ ROMInfoWidget::ROMInfoWidget(QWidget * parent) : QWidget(parent) {
     savebs = new QPushButton(tr("No ROM Loaded"));
     savebs->setEnabled(false);
 
+    viewtxt = new QPushButton(tr("No ROM Loaded"));
+    viewtxt->setEnabled(false);
+
     wlay = new QGridLayout;
 
     wlay->addWidget(intname_key, 0, 0, 1, 1, Qt::AlignRight);
@@ -44,6 +47,7 @@ ROMInfoWidget::ROMInfoWidget(QWidget * parent) : QWidget(parent) {
     wlay->addWidget(crc_chk, 3, 2, 1, 1);
 
     wlay->addWidget(savebs, 4, 0, 1, 3);
+    wlay->addWidget(viewtxt, 5, 0, 1, 3);
 
     setLayout(wlay);
 
@@ -52,6 +56,7 @@ ROMInfoWidget::ROMInfoWidget(QWidget * parent) : QWidget(parent) {
      ***************/
 
     connect(savebs, &QPushButton::clicked, this, &ROMInfoWidget::saveROM);
+    connect(viewtxt, &QPushButton::clicked, this, &ROMInfoWidget::browseText);
     connect(&crcverify, &QFutureWatcher<bool>::finished, this, &ROMInfoWidget::checkedCRC);
 }
 
@@ -65,6 +70,9 @@ void ROMInfoWidget::changeROM(ROM::ROM * nr) {
         savebs->setEnabled(false);
         savebs->setText(tr("Wasn't byteswapped"));
     }
+
+    viewtxt->setEnabled(true);
+    viewtxt->setText(tr("View Game Text"));
 
     intname_val->setText(the_rom->get_rname().c_str());
     intcode_val->setText(the_rom->get_rcode().c_str());
@@ -129,4 +137,8 @@ void ROMInfoWidget::saveROM() {
     }
 
     writeto.close();
+}
+
+void ROMInfoWidget::browseText() {
+    wantTextWindow();
 }

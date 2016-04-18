@@ -205,7 +205,7 @@ namespace TextAST {
         return BoxYPos::Bottom;
     }
 
-    MessageIndex analyzeMsgTbl(ROM::ROM & therom) {
+    MessageIndex analyzeMsgTbl(const ROM::ROM & therom) {
         MessageIndex text_ids;
 
         if (Config::getGame(therom.getVersion()) == Config::Game::Ocarina) {

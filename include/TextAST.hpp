@@ -209,8 +209,7 @@ namespace TextAST {
 
     typedef std::map<Config::Language, std::map<uint16_t, MsgInfo>> MessageIndex;
 
-    // not const on the ROM so we can cache newly-accessed files
-    MessageIndex analyzeMsgTbl(ROM::ROM & therom);
+    MessageIndex analyzeMsgTbl(const ROM::ROM & therom);
         
 }
 

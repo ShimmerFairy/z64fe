@@ -40,7 +40,6 @@ class MainWindow : public QMainWindow {
 
     QDockWidget * file_list_dock; ///< Holds the file list and operations on those files
     QDockWidget * rom_info_dock;  ///< Holds info on the ROM and any operations on said ROM
-    QDockWidget * text_data_dock; ///< Holds info on and allows viewing of text data
 
     ROMFileWidget * file_list_widget; ///< Actual widget for file_list_dock
     ROMInfoWidget * rom_info_widget;  ///< Actual widget for rom_info_dock
@@ -66,6 +65,7 @@ class MainWindow : public QMainWindow {
     void openROM();
 
     void makeHexWindow(ROM::File rf);
+    void makeTextWindow();
 
   protected:
     /** \brief Reimplementation of Qt close event

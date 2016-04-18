@@ -16,8 +16,10 @@
 #include <iomanip>
 #include <iostream>
 
-TextViewer::TextViewer(ROM::ROM & r, TextAST::MessageIndex msgindex) : trom(&r), midx(msgindex) {
+TextViewer::TextViewer(ROM::ROM * r) : trom(r) {
     setAttribute(Qt::WA_DeleteOnClose);
+
+    midx = TextAST::analyzeMsgTbl(*r);
 
     idlist = new QTreeView;
     idmod = new TextIDModel(midx);

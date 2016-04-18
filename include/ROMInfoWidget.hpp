@@ -38,15 +38,20 @@ class ROMInfoWidget : public QWidget {
     QLabel * crc_chk;
 
     QPushButton * savebs;
+    QPushButton * viewtxt;
 
     QFutureWatcher<bool> crcverify;
 
   private slots:
     void saveROM();
     void checkedCRC();
+    void browseText();
 
   public slots:
     void changeROM(ROM::ROM * nr);
+
+  signals:
+    void wantTextWindow();
 
   public:
     ROMInfoWidget(QWidget * parent = nullptr);
