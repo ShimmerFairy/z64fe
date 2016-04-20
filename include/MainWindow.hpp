@@ -45,11 +45,15 @@ class MainWindow : public QMainWindow {
     ROMInfoWidget * rom_info_widget;  ///< Actual widget for rom_info_dock
 
     QMenu * file_menu; ///< The "File" option on the menu bar
+    QMenu * help_menu; ///< The "Help" option on the menu bar
 
     QToolBar * actions_toolbar; ///< The main toolbar of the window
 
     QAction * load_rom;  ///< Action for loading a ROM file
     QAction * exit_prog; ///< Action for exiting the program
+
+    QAction * about_this; ///< Action displaying about this program.
+    QAction * about_qt;   ///< Info about the Qt toolkit we're using.
 
     ROM::ROM * the_rom; ///< ROM file currently in use (this class owns the pointer)
 
@@ -66,6 +70,8 @@ class MainWindow : public QMainWindow {
 
     void makeHexWindow(ROM::File rf);
     void makeTextWindow();
+
+    void aboutMe();
 
   protected:
     /** \brief Reimplementation of Qt close event

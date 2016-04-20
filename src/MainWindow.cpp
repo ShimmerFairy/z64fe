@@ -8,6 +8,7 @@
 #include "Exceptions.hpp"
 #include "Hex/Widget.hpp"
 #include "TextViewer.hpp"
+#include "projectinfo.hpp"
 
 #include <QToolBar>
 #include <QMenuBar>
@@ -17,6 +18,7 @@
 #include <QFile>
 #include <QMessageBox>
 #include <QMdiSubWindow>
+#include <QApplication>
 
 MainWindow::MainWindow() {
     the_rom = nullptr;
@@ -45,10 +47,20 @@ MainWindow::MainWindow() {
                             this);
     exit_prog->setShortcut(QKeySequence::Quit);
 
+    about_this = new QAction(QIcon::fromTheme("help-about", QIcon(":/icons/help-about.svg")),
+                             tr("&About Z64Fe"),
+                             this);
+
+    about_qt = new QAction(tr("About &Qt"), this);
+
     file_menu = menuBar()->addMenu(tr("&File"));
     file_menu->addAction(load_rom);
     file_menu->addSeparator();
     file_menu->addAction(exit_prog);
+
+    help_menu = menuBar()->addMenu(tr("&Help"));
+    help_menu->addAction(about_this);
+    help_menu->addAction(about_qt);
 
     actions_toolbar = addToolBar(tr("Actions"));
     actions_toolbar->addAction(load_rom);
@@ -67,6 +79,9 @@ MainWindow::MainWindow() {
     connect(this, &MainWindow::romChanged, rom_info_widget, &ROMInfoWidget::changeROM);
 
     connect(load_rom, &QAction::triggered, this, &MainWindow::openROM);
+    connect(exit_prog, &QAction::triggered, this, &MainWindow::close);
+    connect(about_this, &QAction::triggered, this, &MainWindow::aboutMe);
+    connect(about_qt, &QAction::triggered, &QApplication::aboutQt);
 
     connect(file_list_widget, &ROMFileWidget::wantHexWindow, this, &MainWindow::makeHexWindow);
     connect(rom_info_widget, &ROMInfoWidget::wantTextWindow, this, &MainWindow::makeTextWindow);
@@ -128,4 +143,9 @@ void MainWindow::makeHexWindow(ROM::File rf) {
 
 void MainWindow::makeTextWindow() {
     main_portal->addSubWindow(new TextViewer(the_rom))->show();
+}
+
+void MainWindow::aboutMe() {
+    QMessageBox::about(this, "About Z64Fe", QString("This is Z64Fe version %1.").arg(
+                           PInfo::VERSION.c_str()));
 }
