@@ -42,6 +42,7 @@ ROMFileWidget::ROMFileWidget(QWidget * parent) : QWidget(parent) {
 
     view_hex  = new QPushButton(tr("&View Raw File"));
     save_file = new QPushButton(tr("&Save Individual File..."));
+    see_obj   = new QPushButton(tr("V&iew File Objects"));
 
     QFont monfont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
 
@@ -53,6 +54,7 @@ ROMFileWidget::ROMFileWidget(QWidget * parent) : QWidget(parent) {
     want_dec->setEnabled(false);
     view_hex->setEnabled(false);
     save_file->setEnabled(false);
+    see_obj->setEnabled(false);
 
     wlay->addWidget(filelist, 0, 0, 1, 2);
 
@@ -76,6 +78,7 @@ ROMFileWidget::ROMFileWidget(QWidget * parent) : QWidget(parent) {
     wlay->addWidget(want_dec, 7, 0, 1, 2, Qt::AlignCenter);
     wlay->addWidget(view_hex, 8, 0, 1, 2);
     wlay->addWidget(save_file, 9, 0, 1, 2);
+    wlay->addWidget(see_obj, 10, 0, 1, 2);
 
     setLayout(wlay);
 
@@ -85,6 +88,7 @@ ROMFileWidget::ROMFileWidget(QWidget * parent) : QWidget(parent) {
 
     connect(save_file, &QPushButton::clicked, this, &ROMFileWidget::saveFile);
     connect(view_hex, &QPushButton::clicked, this, &ROMFileWidget::viewHexFile);
+    connect(see_obj, &QPushButton::clicked, this, &ROMFileWidget::viewObjFile);
 }
 
 void ROMFileWidget::changeROM(ROM::ROM * nr) {
@@ -109,6 +113,7 @@ void ROMFileWidget::changeROM(ROM::ROM * nr) {
     want_dec->setEnabled(true);
     view_hex->setEnabled(true);
     save_file->setEnabled(true);
+    see_obj->setEnabled(true);
 }
 
 void ROMFileWidget::selectFile(const QModelIndex & cur, const QModelIndex & /*old*/) {
@@ -168,4 +173,10 @@ void ROMFileWidget::viewHexFile() {
     ROM::File rf = the_rom->fileAtNum(filelist->currentIndex().row(), want_dec->isChecked());
 
     wantHexWindow(rf);
+}
+
+void ROMFileWidget::viewObjFile() {
+    ROM::File rf = the_rom->fileAtNum(filelist->currentIndex().row(), want_dec->isChecked());
+
+    wantObjWindow(rf);
 }

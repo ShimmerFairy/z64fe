@@ -19,6 +19,18 @@ class Exception {
 };
 
 namespace X {
+    class Multi : public Exception {
+      private:
+        std::vector<Exception *> elist;
+
+      public:
+        size_t size() const;
+
+        void addException(Exception * e);
+
+        std::string what() override;
+    };
+
     class InternalError : public Exception {
       private:
         std::string specifics;
@@ -26,7 +38,7 @@ namespace X {
       public:
         InternalError(std::string sp);
 
-        std::string what();
+        std::string what() override;
     };
 
     class NYI : public Exception {
@@ -36,7 +48,7 @@ namespace X {
       public:
         NYI(std::string whatthing = "this feature");
 
-        std::string what();
+        std::string what() override;
     };
 
     class BadROM : public Exception {
@@ -46,7 +58,7 @@ namespace X {
       public:
         BadROM(std::string r);
 
-        std::string what();
+        std::string what() override;
     };
 
     class BadIndex : public Exception {
@@ -56,7 +68,7 @@ namespace X {
       public:
         BadIndex(std::string wi);
 
-        std::string what();
+        std::string what() override;
     };
 
     class NoConfig : public Exception {
@@ -66,13 +78,13 @@ namespace X {
       public:
         NoConfig(std::string t);
 
-        std::string what();
+        std::string what() override;
     };
 
     namespace ROM {
         class NoMagic : public Exception {
           public:
-            std::string what();
+            std::string what() override;
         };
     }
 
@@ -84,7 +96,7 @@ namespace X {
           public:
             SyntaxError(std::string e);
 
-            std::string what();
+            std::string what() override;
         };
 
         class BadCharacter : public SyntaxError {
@@ -105,7 +117,7 @@ namespace X {
           public:
             NotFound(std::string t, std::string v);
 
-            std::string what();
+            std::string what() override;
         };
 
         class NoSuchKey : public NotFound {
@@ -127,7 +139,7 @@ namespace X {
           public:
             Decompress(std::string r);
 
-            std::string what();
+            std::string what() override;
         };
     }
 
@@ -140,12 +152,12 @@ namespace X {
           public:
             BadSequence(std::initializer_list<uint8_t> bs, std::string optr = "");
 
-            std::string what();
+            std::string what() override;
         };
 
         class HeaderError : public Exception {
           public:
-            std::string what();
+            std::string what() override;
         };
     }
 }

@@ -47,6 +47,7 @@ class ROMFileWidget : public QWidget {
 
     QPushButton * view_hex;
     QPushButton * save_file;
+    QPushButton * see_obj;
 
   private slots:
     /** \brief Slot for selecting an item in the list
@@ -55,6 +56,7 @@ class ROMFileWidget : public QWidget {
 
     void saveFile();
     void viewHexFile();
+    void viewObjFile();
 
   public slots:
     /** \brief Slot for when a new ROM is chosen
@@ -65,6 +67,8 @@ class ROMFileWidget : public QWidget {
     /** \brief Signal telling main window we'd like to open a hex view window.
      */
     void wantHexWindow(ROM::File rf);
+
+    void wantObjWindow(ROM::File rf);
 
   public:
     /** \brief Constructs this widget

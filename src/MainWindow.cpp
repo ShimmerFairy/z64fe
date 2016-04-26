@@ -8,6 +8,7 @@
 #include "Exceptions.hpp"
 #include "Hex/Widget.hpp"
 #include "TextViewer.hpp"
+#include "ObjViewer.hpp"
 #include "projectinfo.hpp"
 
 #include <QToolBar>
@@ -85,6 +86,7 @@ MainWindow::MainWindow() {
 
     connect(file_list_widget, &ROMFileWidget::wantHexWindow, this, &MainWindow::makeHexWindow);
     connect(rom_info_widget, &ROMInfoWidget::wantTextWindow, this, &MainWindow::makeTextWindow);
+    connect(file_list_widget, &ROMFileWidget::wantObjWindow, this, &MainWindow::makeObjWindow);
 }
 
 void MainWindow::closeEvent(QCloseEvent * ev) {
@@ -143,6 +145,10 @@ void MainWindow::makeHexWindow(ROM::File rf) {
 
 void MainWindow::makeTextWindow() {
     main_portal->addSubWindow(new TextViewer(the_rom))->show();
+}
+
+void MainWindow::makeObjWindow(ROM::File rf) {
+    main_portal->addSubWindow(new ObjViewer(rf))->show();
 }
 
 void MainWindow::aboutMe() {

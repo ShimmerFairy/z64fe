@@ -70,6 +70,7 @@ class MainWindow : public QMainWindow {
 
     void makeHexWindow(ROM::File rf);
     void makeTextWindow();
+    void makeObjWindow(ROM::File rf);
 
     void aboutMe();
 

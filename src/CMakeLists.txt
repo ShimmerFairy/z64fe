@@ -16,5 +16,8 @@ add_executable(z64fe main.cpp
                      TextAST.cpp
                      TextRender.cpp ${CMAKE_SOURCE_DIR}/include/TextRender.hpp
                      Hex/Widget.cpp ${CMAKE_SOURCE_DIR}/include/Hex/Widget.hpp
-                     Hex/Cursor.cpp)
+                     Hex/Cursor.cpp
+                     RCP/DisplayList.cpp
+                     RCP/Image.cpp
+                     ObjViewer.cpp ${CMAKE_SOURCE_DIR}/include/ObjViewer.hpp)
 target_link_libraries(z64fe Qt5::Widgets Qt5::Concurrent)

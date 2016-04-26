@@ -14,6 +14,27 @@ std::string Exception::what() {
 }
 
 namespace X {
+    size_t Multi::size() const {
+        return elist.size();
+    }
+
+    void Multi::addException(Exception * e) {
+        elist.push_back(e);
+    }
+
+    std::string Multi::what() {
+        std::stringstream res;
+
+        res << elist.size() << " problem" << (elist.size() == 1 ? "" : "s");
+        res << " found:\n\n";
+
+        for (auto & i : elist) {
+            res << i->what() << "\n\n";
+        }
+
+        return res.str();
+    }
+
     InternalError::InternalError(std::string sp) : specifics(sp) { }
 
     std::string InternalError::what() {

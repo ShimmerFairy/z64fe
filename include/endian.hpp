@@ -43,3 +43,20 @@ uint32_t be_u32(const ForwardIt & starting) {
 
     return res;
 }
+
+template <typename ForwardIt>
+uint64_t be_u64(const ForwardIt & starting) {
+    uint64_t res = 0;
+    ForwardIt pnt = starting;
+
+    res |= static_cast<uint64_t>(*pnt++) << 56;
+    res |= static_cast<uint64_t>(*pnt++) << 48;
+    res |= static_cast<uint64_t>(*pnt++) << 40;
+    res |= static_cast<uint64_t>(*pnt++) << 32;
+    res |= static_cast<uint64_t>(*pnt++) << 24;
+    res |= static_cast<uint64_t>(*pnt++) << 16;
+    res |= static_cast<uint64_t>(*pnt++) <<  8;
+    res |= static_cast<uint64_t>(*pnt++);
+
+    return res;
+}
