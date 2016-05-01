@@ -1,0 +1,91 @@
+Z64Fe, The Zelda 64 File Explorer
+================================================================================
+
+This program is for exploring the files in the N64 Ocarina of Time and Majora's
+Mask games. The current focus is just on viewing these files, though editing is
+a distinct possibility eventually.
+
+By "exploring", we of course mean being able to examine the contents of files in
+these games in a useful fashion, whether it be viewing models, listening to
+audio, etc.
+
+================================================================================
+HOW TO COMPILE
+================================================================================
+
+--------------------------------------------------------------------------------
+PREREQUISITES
+--------------------------------------------------------------------------------
+
+To compile this progam, you will need:
+
+- A C++14 compiler. Support on par with g++ 5.3.0 is currently
+  recommended. (Precautionary note: we'll be switching over to C++17 as soon as
+  is possible.)
+
+- CMake 3.3.1 or later (note that the CMake files written may work with older
+  versions of CMake, but for now it's set to 3.3.1 to make sure new features
+  aren't accidentally used.)
+
+- Qt 5.5 or later (note that now I'm developing against 5.6, but until I use a
+  5.6-only feature, 5.5 should be the minimum).
+
+  -- If you will not install all of Qt, then to be precise we need QtCore (duh),
+     QtWidgets, and QtConcurrency. More parts of the library may be required in
+     the future.
+
+- gmp 6.1.0 with C++ support, for fixed-point numbers in e.g. the RCP
+  implementation.
+
+  -- The C++ support is only to have iostream operators << and >> available for
+     the base C types. If you cannot enable C++ support in gmp, you must provide
+     these operators near the fixed-point implementation.
+
+  -- In the future we'll definitely consider alternate implementations of
+     fixnums, especially as we learn more the scope of their usefulness in this
+     project.
+
+- (optional) Doxygen, to generate code documentation.
+
+--------------------------------------------------------------------------------
+CONFIGURATION
+--------------------------------------------------------------------------------
+
+Create a special build directory to build the program in (in-tree builds are not
+supported). For example:
+
+    ~/myz64fe $ mkdir BUILD
+    ~/myz64fe $ cd BUILD
+    ~/myz64fe/BUILD $
+
+Then run `cmake`, or your preferred alternate interface (e.g. `ccmake`), to
+generate the appropriate project files.
+
+    ~/myz64fe/BUILD $ ccmake ../
+    ~/myz64fe/BUILD $
+
+CUSTOM CMAKE OPTIONS FOR THIS PROJECT:
+
+* BUILD_DOCUMENTATION : Boolean enabling building the code documentation for the
+                        project. Default value depends on if CMake could find
+                        Doxygen.
+
+--------------------------------------------------------------------------------
+COMPILATION & INSTALLATION
+--------------------------------------------------------------------------------
+
+At this point, compiling and then installing will of course depend on your
+chosen build system.
+
+For installation, we naturally follow as closely as possible the Linux
+Foundation FHS standard for the default layout of installed files.
+
+================================================================================
+HOW TO USE
+================================================================================
+
+Use of the program should be straightforward. Note that, as it's still in
+development, there will likely be several rough features.
+
+================================================================================
+Copyright (c) 2016 Faye under the Artistic License 2.0 
