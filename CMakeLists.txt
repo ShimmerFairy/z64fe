@@ -15,18 +15,84 @@ set(CMAKE_CXX_EXTENSIONS FALSE)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_STANDARD 14)
 
-# now for compiler-specific flags (feel free to add a compiler here if your
-# compiler isn't here. Note that your compiler must be supported by
-# CMAKE_CXX_COMPILER_ID, and this new variable must be of the format
-# Z64FE_CXX_${your-compiler's-id}_FLAGS)
-set(Z64FE_CXX_FLAGS "-Wall" CACHE STRING "Compile flags used by Z64Fe for any compiler")
-set(Z64FE_CXX_GNU_FLAGS "-Wextra -pedantic" CACHE STRING "Compile flags used by Z64Fe with g++")
-set(Z64FE_CXX_Clang_FLAGS "-Wextra -pedantic" CACHE STRING "Compile flags used by Z64Fe with clang++")
-set(Z64FE_CXX_MSVC_FLAGS "" CACHE STRING "Compile flags used by Z64Fe with MSVC")
-set(Z64FE_CXX_AppleClang_FLAGS "-Wextra -pedantic" CACHE STRING "Compile flags used by Z64FE with Apple's version of clang++ (e.g. from XCode)") # XXX verify it works
+# now for compiler-specific flags. If your compiler isn't listed here, but is
+# supported by ${CMAKE_CXX_COMPILER_ID}, then feel free to add its flag
+# variables, following the format given of course. Note that variables are
+# case-sensitive, so the part identifying the compiler must match the case given
+# by ${CMAKE_CXX_COMPILER_ID}.
+
+# also, the reason for the weird double-underscore on the non-compiler-specific
+# entries is purely a hack to get those to group together nicely; otherwise,
+# you'll inevitably have them weirdly spread out between the compiler-specific
+# variables. Think of the double-underscore as really holding an "empty"
+# compiler name, which means compiler-independent.
+set(Z64FE_CXX_FLAGS__            "-Wall"             CACHE STRING "Compile flags used by Z64Fe for any compiler")
+set(Z64FE_CXX_FLAGS_GNU        "-Wextra -pedantic" CACHE STRING "Compile flags used by Z64Fe with g++")
+set(Z64FE_CXX_FLAGS_Clang      "-Wextra -pedantic" CACHE STRING "Compile flags used by Z64Fe with non-Apple clang++")
+set(Z64FE_CXX_FLAGS_MSVC       ""                  CACHE STRING "Compile flags used by Z64Fe with MSVC")
+set(Z64FE_CXX_FLAGS_AppleClang "-Wextra -pedantic" CACHE STRING "Compile flags used by Z64FE with Apple's version of clang++ (e.g. from XCode)")
+
+set(Z64FE_CXX_FLAGS__DEBUG            "" CACHE STRING "Compile flags used by Z64Fe for any compiler, for debug builds")
+set(Z64FE_CXX_FLAGS_GNU_DEBUG        "" CACHE STRING "Compile flags used by Z64Fe when compiling a debug build with g++")
+set(Z64FE_CXX_FLAGS_Clang_DEBUG      "" CACHE STRING "Compile flags used by Z64Fe when compiling a debug build with non-Apple clang++")
+set(Z64FE_CXX_FLAGS_MSVC_DEBUG       "" CACHE STRING "Compile flags used by Z64Fe when compiling a debug build with MSVC")
+set(Z64FE_CXX_FLAGS_AppleClang_DEBUG "" CACHE STRING "Compile flags used by Z64Fe when compiling a debug build with Apple's version of clang++")
+
+set(Z64FE_CXX_FLAGS__MINSIZEREL            "" CACHE STRING "Compile flags used by Z64Fe for any compiler, for minimum-size builds")
+set(Z64FE_CXX_FLAGS_GNU_MINSIZEREL        "" CACHE STRING "Compile flags used by Z64Fe when compiling a minimum-size build with g++")
+set(Z64FE_CXX_FLAGS_Clang_MINSIZEREL      "" CACHE STRING "Compile flags used by Z64Fe when compiling a minimum-size build with non-Apple clang++")
+set(Z64FE_CXX_FLAGS_MSVC_MINSIZEREL       "" CACHE STRING "Compile flags used by Z64Fe when compiling a minimum-size build with MSVC")
+set(Z64FE_CXX_FLAGS_AppleClang_MINSIZEREL "" CACHE STRING "Compile flags used by Z64Fe when compiling a minimum-size build with Apple's version of clang++")
+
+set(Z64FE_CXX_FLAGS__RELEASE            "" CACHE STRING "Compile flags used by Z64Fe for any compiler, for release builds")
+set(Z64FE_CXX_FLAGS_GNU_RELEASE        "" CACHE STRING "Compile flags used by Z64Fe when compiling a release build with g++")
+set(Z64FE_CXX_FLAGS_Clang_RELEASE      "" CACHE STRING "Compile flags used by Z64Fe when compiling a release build with non-Apple clang++")
+set(Z64FE_CXX_FLAGS_MSVC_RELEASE       "" CACHE STRING "Compile flags used by Z64Fe when compiling a release build with MSVC")
+set(Z64FE_CXX_FLAGS_AppleClang_RELEASE "" CACHE STRING "Compile flags used by Z64Fe when compiling a release build with Apple's version of clang++")
+
+set(Z64FE_CXX_FLAGS__RELWITHDEBINFO            "" CACHE STRING "Compile flags used by Z64Fe for any compiler, for release builds with debug info")
+set(Z64FE_CXX_FLAGS_GNU_RELWITHDEBINFO        "" CACHE STRING "Compile flags used by Z64Fe when compiling a release build (with debug info) with g++")
+set(Z64FE_CXX_FLAGS_Clang_RELWITHDEBINFO      "" CACHE STRING "Compile flags used by Z64Fe when compiling a release build (with debug info) with non-Apple clang++")
+set(Z64FE_CXX_FLAGS_MSVC_RELWITHDEBINFO       "" CACHE STRING "Compile flags used by Z64Fe when compiling a release build (with debug info) with MSVC")
+set(Z64FE_CXX_FLAGS_AppleClang_RELWITHDEBINFO "" CACHE STRING "Compile flags used by Z64Fe when compiling a release build (with debug info) with Apple's version of clang++")
+
+# mark all of the above as advanced, just like their CMAKE_CXX "cousins".
+mark_as_advanced(FORCE Z64FE_CXX_FLAGS__
+                       Z64FE_CXX_FLAGS_GNU
+                       Z64FE_CXX_FLAGS_Clang
+                       Z64FE_CXX_FLAGS_MSVC
+                       Z64FE_CXX_FLAGS_AppleClang
+
+                       Z64FE_CXX_FLAGS__DEBUG
+                       Z64FE_CXX_FLAGS_GNU_DEBUG
+                       Z64FE_CXX_FLAGS_Clang_DEBUG
+                       Z64FE_CXX_FLAGS_MSVC_DEBUG
+                       Z64FE_CXX_FLAGS_AppleClang_DEBUG
+
+                       Z64FE_CXX_FLAGS__MINSIZEREL
+                       Z64FE_CXX_FLAGS_GNU_MINSIZEREL
+                       Z64FE_CXX_FLAGS_Clang_MINSIZEREL
+                       Z64FE_CXX_FLAGS_MSVC_MINSIZEREL
+                       Z64FE_CXX_FLAGS_AppleClang_MINSIZEREL
+
+                       Z64FE_CXX_FLAGS__RELEASE
+                       Z64FE_CXX_FLAGS_GNU_RELEASE
+                       Z64FE_CXX_FLAGS_Clang_RELEASE
+                       Z64FE_CXX_FLAGS_MSVC_RELEASE
+                       Z64FE_CXX_FLAGS_AppleClang_RELEASE
+
+                       Z64FE_CXX_FLAGS__RELWITHDEBINFO
+                       Z64FE_CXX_FLAGS_GNU_RELWITHDEBINFO
+                       Z64FE_CXX_FLAGS_Clang_RELWITHDEBINFO
+                       Z64FE_CXX_FLAGS_MSVC_RELWITHDEBINFO
+                       Z64FE_CXX_FLAGS_AppleClang_RELWITHDEBINFO)
 
 # this will take those compiler-specific flags above and set them up as needed
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Z64FE_CXX_FLAGS} ${Z64FE_CXX_${CMAKE_CXX_COMPILER_ID}_FLAGS}")
+set(CMAKE_CXX_FLAGS                "${CMAKE_CXX_FLAGS} ${Z64FE_CXX_FLAGS__} ${Z64FE_CXX_FLAGS_${CMAKE_CXX_COMPILER_ID}}")
+set(CMAKE_CXX_FLAGS_DEBUG          "${CMAKE_CXX_FLAGS_DEBUG} ${Z64FE_CXX_FLAGS__DEBUG} ${Z64FE_CXX_FLAGS_${CMAKE_CXX_COMPILER_ID}_DEBUG}")
+set(CMAKE_CXX_FLAGS_MINSIZEREL     "${CMAKE_CXX_FLAGS_MINSIZEREL} ${Z64FE_CXX_FLAGS__MINSIZEREL} ${Z64FE_CXX_FLAGS_${CMAKE_CXX_COMPILER_ID}_MINSIZEREL}")
+set(CMAKE_CXX_FLAGS_RELEASE        "${CMAKE_CXX_FLAGS_RELEASE} ${Z64FE_CXX_FLAGS__RELEASE} ${Z64FE_CXX_FLAGS_${CMAKE_CXX_COMPILER_ID}_RELEASE}")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${Z64FE_CXX_FLAGS__RELWITHDEBINFO} ${Z64FE_CXX_FLAGS_${CMAKE_CXX_COMPILER_ID}_RELWITHDEBINFO}")
 
 # now let's find Qt5 and other needed packages!
 find_package(Qt5Widgets)
