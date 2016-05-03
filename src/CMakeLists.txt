@@ -20,4 +20,4 @@ add_executable(z64fe main.cpp
                      RCP/DisplayList.cpp
                      RCP/Image.cpp
                      ObjViewer.cpp ${CMAKE_SOURCE_DIR}/include/ObjViewer.hpp)
-target_link_libraries(z64fe Qt5::Widgets Qt5::Concurrent)
+target_link_libraries(z64fe Qt5::Widgets Qt5::Concurrent ${GMP_LIBRARIES})

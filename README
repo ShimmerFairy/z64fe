@@ -64,11 +64,8 @@ generate the appropriate project files.
     ~/myz64fe/BUILD $ ccmake ../
     ~/myz64fe/BUILD $
 
-CUSTOM CMAKE OPTIONS FOR THIS PROJECT:
-
-* BUILD_DOCUMENTATION : Boolean enabling building the code documentation for the
-                        project. Default value depends on if CMake could find
-                        Doxygen.
+The specific build options provided by Z64Fe are listed in the BUILDING file (in
+the same directory as this README).
 
 --------------------------------------------------------------------------------
 COMPILATION & INSTALLATION

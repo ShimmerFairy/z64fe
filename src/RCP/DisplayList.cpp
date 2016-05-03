@@ -10,13 +10,15 @@
 #include <cassert>
 
 #include <algorithm>
-#include <iostream>
+#include <sstream>
 #include <iomanip>
 
 namespace RCP {
     namespace Command {
-        NOOP::NOOP(uint64_t instr) : tag(instr & 0xFFFFFFFF) {
+        NOOP::NOOP(uint64_t instr) {
             assert(instr >> 56 == 0x00);
+
+            tag = instr & 0xFFFFFFFF;
         }
 
         std::string NOOP::sid() { return "G_NOOP"; }
@@ -31,6 +33,26 @@ namespace RCP {
             size = instr >> (32 + 12) & 0xFF;
             dst_idx = ((instr >> 32 & 0xFF) >> 1) - size;
             ram_address = instr & 0xFFFFFFFF;
+
+            //// VALIDITY CHECK
+            // 1. Make sure size and dst_idx are in range
+            if (!(1 <= size && size <= 32)) {
+                throw X::RCP::BadCommand(sid(), instr, "Size out of range");
+            }
+
+            if (!(dst_idx <= 31)) {
+                throw X::RCP::BadCommand(sid(), instr, "Destination index out of range");
+            }
+
+            // 2. Check that destination index + size don't exceed 32 vertices.
+            if (size + dst_idx > 32) {
+                throw X::RCP::BadCommand(sid(), instr, "Attempting to load vertices past endpoint");
+            }
+
+            // 3. Check segment address for valid segment
+            if ((ram_address >> 24) > 0x0F) {
+                throw X::RCP::BadCommand(sid(), instr, "Invalid segment for segment address");
+            }
         }
 
         std::string VTX::sid() { return "G_VTX"; }
@@ -42,9 +64,35 @@ namespace RCP {
         MODIFYVTX::MODIFYVTX(uint64_t instr) {
             assert(instr >> 56 == 0x02);
 
-            where = static_cast<Change>(instr >> (32 + 16) & 0xFF);
+            switch (instr >> (32 + 16) & 0xFF) {
+              case 0x10:
+                where = Change::RGBA;
+                break;
+
+              case 0x14:
+                where = Change::ST;
+                break;
+
+              case 0x18:
+                where = Change::XYSCREEN;
+                break;
+
+              case 0x1C:
+                where = Change::ZSCREEN;
+                break;
+
+              default:
+                throw X::RCP::BadCommand(sid(), instr, "Invalid modification index");
+                break;
+            }
+
             dst_idx = (instr >> 32 & 0xFFFF) / 2;
             value = instr & 0xFFFFFFFF;
+
+            //// VALIDITY CHECK
+            if (!(dst_idx <= 31)) {
+                throw X::RCP::BadCommand(sid(), instr, "Bad vertex index");
+            }
         }
 
         std::string MODIFYVTX::sid() { return "G_MODIFYVTX"; }
@@ -58,6 +106,21 @@ namespace RCP {
 
             begin_idx = (instr >> 32 & 0xFFFF) / 2;
             end_idx = (instr & 0xFFFF) / 2;
+
+            //// VALIDITY CHECK
+            // 1. Check indexes
+            if (!(begin_idx <= 31)) {
+                throw X::RCP::BadCommand(sid(), instr, "Bad start index");
+            }
+
+            if (!(end_idx <= 31)) {
+                throw X::RCP::BadCommand(sid(), instr, "Bad end index");
+            }
+
+            // 2. check that the indices specify a real list
+            if (!(begin_idx < end_idx)) {
+                throw X::RCP::BadCommand(sid(), instr, "Invalid vertex list given");
+            }
         }
 
         std::string CULLDL::sid() { return "G_CULLDL"; }
@@ -73,7 +136,7 @@ namespace RCP {
             test_idx_2 = (instr >> 32 & 0xFFF) / 2;
 
             if (test_idx != test_idx_2) {
-                throw X::RCP::BadCommand(sid());
+                throw X::RCP::BadCommand(sid(), instr, "Given indices aren't the same");
             }
 
             z_value = instr & 0xFFFFFFFF;
@@ -91,6 +154,13 @@ namespace RCP {
             vtx_idxs[0] = (instr >> (32 + 16) & 0xFF) / 2;
             vtx_idxs[1] = (instr >> (32 +  8) & 0xFF) / 2;
             vtx_idxs[2] = (instr >>  32       & 0xFF) / 2;
+
+            //// VALIDITY CHECK
+            for (auto & i : vtx_idxs) {
+                if (!(i <= 31)) {
+                    throw X::RCP::BadCommand(sid(), instr, "A vertex index was out of range");
+                }
+            }
         }
 
         std::string TRI1::sid() { return "G_TRI1"; }
@@ -109,6 +179,12 @@ namespace RCP {
             vtx_idxs[3] = (instr >>  16       & 0xFF) / 2;
             vtx_idxs[4] = (instr >>   8       & 0xFF) / 2;
             vtx_idxs[5] = (instr              & 0xFF) / 2;
+
+            for (auto & i : vtx_idxs) {
+                if (!(i <= 31)) {
+                    throw X::RCP::BadCommand(sid(), instr, "A vertex index was out of range");
+                }
+            }
         }
 
         std::string TRI2::sid() { return "G_TRI2"; }
@@ -129,6 +205,11 @@ namespace RCP {
             dmem_address = (instr >> (32 + 13) & 0x3FF) * 8;
             size = (instr >> 32 & 0xFFF) + 1;
             ram_address = instr & 0xFFFFFFFF;
+
+            //// VALIDITY CHECK
+            if ((ram_address >> 24) > 0x0F) {
+                throw X::RCP::BadCommand(sid(), instr, "Invalid segment for segment address");
+            }
         }
 
         std::string DMA_IO::sid() { return "G_DMA_IO"; }
@@ -146,6 +227,13 @@ namespace RCP {
 
             scale_S = instr >> 16 & 0xFFFF;
             scale_T = instr & 0xFFFF;
+
+            //// VALIDITY CHECK
+            // make sure it's not asking for more mipmaps than possible for this
+            // tile descriptor.
+            if (tile_no + extra_mipmaps > 0x07) {
+                throw X::RCP::BadCommand(sid(), instr, "Too many levels for tile descriptor");
+            }
         }
 
         std::string TEXTURE::sid() { return "G_TEXTURE"; }
@@ -158,6 +246,12 @@ namespace RCP {
             assert(instr >> 56 == 0xD8);
 
             pop_num = (instr & 0xFFFFFFFF) / 64;
+
+            //// VALIDITY CHECK
+            // not asking for too many matrices?
+            if (pop_num > 18) {
+                throw X::RCP::BadCommand(sid(), instr, "Asked to pop too many matrices");
+            }
         }
 
         std::string POPMTX::sid() { return "G_POPMTX"; }
@@ -201,6 +295,11 @@ namespace RCP {
             }
 
             ram_address = instr & 0xFFFFFFFF;
+
+            //// VALIDITY CHECK
+            if ((ram_address >> 24) > 0xF) {
+                throw X::RCP::BadCommand(sid(), instr, "Invalid segment for segment address");
+            }
         }
 
         std::string MTX::sid() { return "G_MTX"; }
@@ -212,7 +311,43 @@ namespace RCP {
         MOVEWORD::MOVEWORD(uint64_t instr) {
             assert(instr >> 56 == 0xDB);
 
-            idx = static_cast<Index>(instr >> (32 + 16) & 0xFF);
+            switch (instr >> (32 + 16) & 0xFF) {
+              case 0x00:
+                idx = Index::Matrix;
+                break;
+
+              case 0x02:
+                idx = Index::NumLight;
+                break;
+
+              case 0x04:
+                idx = Index::Clip;
+                break;
+
+              case 0x06:
+                idx = Index::Segment;
+                break;
+
+              case 0x08:
+                idx = Index::Fog;
+                break;
+
+              case 0x0A:
+                idx = Index::LightCol;
+                break;
+
+              case 0x0C:
+                idx = Index::ForceMtx;
+                break;
+
+              case 0x0E:
+                idx = Index::PerspNorm;
+                break;
+
+              default:
+                throw X::RCP::BadCommand(sid(), instr, "Invalid DMA index");
+            }
+
             offset = instr >> 32 & 0xFFFF;
             value = instr & 0xFFFFFFFF;
         }
@@ -228,8 +363,28 @@ namespace RCP {
 
             size = ((instr >> (32 + 16) & 0xFF) >> 3) * 8 + 1;
             offset = instr >> (32 + 8) & 0xFF;
-            idx = static_cast<Index>(instr >> 32 & 0xFF);
+            switch (instr >> 32 & 0xFF) {
+              case 0x08:
+                idx = Index::Viewport;
+                break;
+
+              case 0x0A:
+                idx = Index::Light;
+                break;
+
+              case 0x0E:
+                idx = Index::Matrix;
+                break;
+
+              default:
+                throw X::RCP::BadCommand(sid(), instr, "Invalid or unsupported DMA index");
+                break;
+            }
             src_address = instr & 0xFFFFFFFF;
+
+            if ((src_address >> 24) > 0x0F) {
+                throw X::RCP::BadCommand(sid(), instr, "Invalid segment for segment address");
+            }
         }
 
         std::string MOVEMEM::sid() { return "G_MOVEMEM"; }
@@ -243,6 +398,10 @@ namespace RCP {
 
             data_size = instr >> 32 & 0xFFFF;
             text_start = instr & 0xFFFFFFFF;
+
+            if ((text_start >> 24) > 0x0F) {
+                throw X::RCP::BadCommand(sid(), instr, "Invalid segment for segment address");
+            }
         }
 
         std::string LOAD_UCODE::sid() { return "G_LOAD_UCODE"; }
@@ -254,13 +413,25 @@ namespace RCP {
         DL::DL(uint64_t instr) {
             assert(instr >> 56 == 0xDE);
 
-            if (instr >> (32 + 16) & 0xFF) {
+            switch (instr >> (32 + 16) & 0xFF) {
+              case 0x00:
                 ret_type = Style::Call;
-            } else {
+                break;
+
+              case 0x01:
                 ret_type = Style::Jump;
+                break;
+
+              default:
+                throw X::RCP::BadCommand(sid(), instr, "Invalid call style for DL command");
+                break;
             }
 
             goto_address = instr & 0xFFFFFFFF;
+
+            if ((goto_address >> 24) > 0x0F) {
+                throw X::RCP::BadCommand(sid(), instr, "Invalid segment for segment address");
+            }
         }
 
         std::string DL::sid() { return "G_DL"; }
@@ -300,6 +471,13 @@ namespace RCP {
             size = (instr >> 32 & 0xFF) + 1;
             shift = 32 - (instr >> (32 + 8) & 0xFF) - size;
             value = instr & 0xFFFFFFFF;
+
+            // weird validity check to do here, just see if the given value is
+            // shifted as expected.
+
+            if ((value & (((1 << size) - 1) << shift)) != value) {
+                throw X::RCP::BadCommand(sid(), instr, "Odd value given to set");
+            }
         }
 
         std::string SETOTHERMODE_L::sid() { return "G_SETOTHERMODE_L"; }
@@ -314,6 +492,13 @@ namespace RCP {
             size = (instr >> 32 & 0xFF) + 1;
             shift = 32 - (instr >> (32 + 8) & 0xFF) - size;
             value = instr & 0xFFFFFFFF;
+
+            // weird validity check to do here, just see if the given value is
+            // shifted as expected.
+
+            if ((value & (((1 << size) - 1) << shift)) != value) {
+                throw X::RCP::BadCommand(sid(), instr, "Odd value given to set");
+            }
         }
 
         std::string SETOTHERMODE_H::sid() { return "G_SETOTHERMODE_H"; }
@@ -463,7 +648,25 @@ namespace RCP {
 
             ulx = instr >> (32 + 12) & 0xFFF;
             uly = instr >> 32 & 0xFFF;
-            scanlines = static_cast<Mode>(instr >> 28 & 0xF);
+
+            switch (instr >> 28 & 0x0F) {
+              case 0x00:
+                scanlines = Mode::All;
+                break;
+
+              case 0x02:
+                scanlines = Mode::Even;
+                break;
+
+              case 0x03:
+                scanlines = Mode::Odd;
+                break;
+
+              default:
+                throw X::RCP::BadCommand(sid(), instr, "Invalid scanline mode value");
+                break;
+            }
+
             lrx = instr >> 12 & 0xFFF;
             lry = instr & 0xFFF;
         }
@@ -477,6 +680,13 @@ namespace RCP {
         SETPRIMDEPTH::SETPRIMDEPTH(uint64_t instr) {
             assert(instr >> 56 == 0xEE);
 
+            // we handle the signed numbers like this to make sure we store
+            // things in a standards-compliant way (since we can't guarantee
+            // that your system uses two's-complement, even though that means
+            // your system has issues, so reinterpret_cast is out. static_cast
+            // is out because the standard won't specify how to handle a uint
+            // with bigger value than the destination int, so hoping it'll do
+            // the correct 2's-comp magic like with signed->unsigned is folly).
             uint16_t uZ = instr >> 16 & 0xFFFF;
             uint16_t udZ = instr & 0xFFFF;
 
@@ -519,6 +729,10 @@ namespace RCP {
 
             tile_no = instr >> 24 & 0x7;
             last_color_idx = (instr >> 12 & 0xFFF) >> 2;
+
+            if (last_color_idx > 0xFF) {
+                throw X::RCP::BadCommand(sid(), instr, "Too many colors requested");
+            }
         }
 
         std::string LOADTLUT::sid() { return "G_LOADTLUT"; }
@@ -590,8 +804,55 @@ namespace RCP {
         SETTILE::SETTILE(uint64_t instr) {
             assert(instr >> 56 == 0xF5);
 
-            Image::Colors icl = static_cast<Image::Colors>(instr >> (32 + 21) & 0x7);
-            Image::Size isz   = static_cast<Image::Size>(instr >> (32 + 19) & 0x3);
+            Image::Colors icl;
+            Image::Size isz;
+
+            switch (instr >> (32 + 21) & 0x7) {
+              case 0x00:
+                icl = Image::Colors::RGBA;
+                break;
+
+              case 0x01:
+                icl = Image::Colors::YUV;
+                break;
+
+              case 0x02:
+                icl = Image::Colors::CI;
+                break;
+
+              case 0x03:
+                icl = Image::Colors::IA;
+                break;
+
+              case 0x04:
+                icl = Image::Colors::I;
+                break;
+
+              default:
+                throw X::RCP::BadCommand(sid(), instr, "Impossible color format given");
+                break;
+            }
+
+            switch (instr >> (32 + 19) & 0x3) {
+              case 0x00:
+                isz = Image::Size::u4;
+                break;
+
+              case 0x01:
+                isz = Image::Size::u8;
+                break;
+
+              case 0x02:
+                isz = Image::Size::u16;
+                break;
+
+              case 0x03:
+                isz = Image::Size::u32;
+                break;
+
+              default:
+                throw X::RCP::BadCommand(sid(), instr, "Impossible format size given");
+            }
 
             tile_fmt = getFormat(icl, isz);
 
@@ -629,6 +890,12 @@ namespace RCP {
             lry = instr >> 32 & 0xFFF;
             ulx = instr >> 12 & 0xFFF;
             uly = instr & 0xFFF;
+
+            //// VALIDITY CHECK, make sure all these 10.2 numbers are integers
+            if ((lrx & 0xFFC) != lrx || (lry & 0xFFC) != lry
+             || (ulx & 0xFFC) != ulx || (uly & 0xFFC) != uly) {
+                throw X::RCP::BadCommand(sid(), instr, "Coordinates not all integers.");
+            }
         }
 
         std::string FILLRECT::sid() { return "G_FILLRECT"; }
@@ -715,30 +982,34 @@ namespace RCP {
         SETCOMBINE::SETCOMBINE(uint64_t instr) {
             assert(instr >> 56 == 0xFC);
 
-            color_1a = static_cast<CC::ColorA>(instr >> (32 + 20) &  0xF);
-            color_1c = static_cast<CC::ColorC>(instr >> (32 + 15) & 0x1F);
+            // this is the only place we static_cast enum values, despite
+            // potentially leading to unnamed values, since writing it all out
+            // would be prohibitively insane.
 
-            alpha_1a = static_cast<CC::AlphaA>(instr >> (32 + 12) &  0x7);
-            alpha_1c = static_cast<CC::AlphaC>(instr >> (32 +  9) &  0x7);
+            color_1a = static_cast<CC::ColorA>(std::min(instr >> (32 + 20) &  0xF,  0x08uL));
+            color_1c = static_cast<CC::ColorC>(std::min(instr >> (32 + 15) & 0x1F,  0x10uL));
 
-            color_2a = static_cast<CC::ColorA>(instr >> (32 +  5) &  0xF);
-            color_2c = static_cast<CC::ColorC>(instr >> 32        & 0x1F);
+            alpha_1a = static_cast<CC::AlphaA>(std::min(instr >> (32 + 12) &  0x7,  0x07uL));
+            alpha_1c = static_cast<CC::AlphaC>(std::min(instr >> (32 +  9) &  0x7,  0x07uL));
 
-            color_1b = static_cast<CC::ColorB>(instr >> 28        &  0xF);
-            color_2b = static_cast<CC::ColorB>(instr >> 24        &  0xF);
+            color_2a = static_cast<CC::ColorA>(std::min(instr >> (32 +  5) &  0xF,  0x08uL));
+            color_2c = static_cast<CC::ColorC>(std::min(instr >> 32        & 0x1F,  0x10uL));
 
-            alpha_2a = static_cast<CC::AlphaA>(instr >> 21        &  0x7);
-            alpha_2c = static_cast<CC::AlphaC>(instr >> 18        &  0x7);
+            color_1b = static_cast<CC::ColorB>(std::min(instr >> 28        &  0xF,  0x08uL));
+            color_2b = static_cast<CC::ColorB>(std::min(instr >> 24        &  0xF,  0x08uL));
 
-            color_1d = static_cast<CC::ColorD>(instr >> 15        &  0x7);
+            alpha_2a = static_cast<CC::AlphaA>(std::min(instr >> 21        &  0x7,  0x07uL));
+            alpha_2c = static_cast<CC::AlphaC>(std::min(instr >> 18        &  0x7,  0x07uL));
 
-            alpha_1b = static_cast<CC::AlphaB>(instr >> 12        &  0x7);
-            alpha_1d = static_cast<CC::AlphaD>(instr >>  9        &  0x7);
+            color_1d = static_cast<CC::ColorD>(std::min(instr >> 15        &  0x7,  0x07uL));
 
-            color_2d = static_cast<CC::ColorD>(instr >>  6        &  0x7);
+            alpha_1b = static_cast<CC::AlphaB>(std::min(instr >> 12        &  0x7,  0x07uL));
+            alpha_1d = static_cast<CC::AlphaD>(std::min(instr >>  9        &  0x7,  0x07uL));
 
-            alpha_2b = static_cast<CC::AlphaB>(instr >>  3        &  0x7);
-            alpha_2d = static_cast<CC::AlphaD>(instr              &  0x7);
+            color_2d = static_cast<CC::ColorD>(std::min(instr >>  6        &  0x7,  0x07uL));
+
+            alpha_2b = static_cast<CC::AlphaB>(std::min(instr >>  3        &  0x7,  0x07uL));
+            alpha_2d = static_cast<CC::AlphaD>(std::min(instr              &  0x7,  0x07uL));
         }
 
         std::string SETCOMBINE::sid() { return "G_SETCOMBINE"; }
@@ -750,12 +1021,63 @@ namespace RCP {
         SETTIMG::SETTIMG(uint64_t instr) {
             assert(instr >> 56 == 0xFD);
 
-            Image::Colors icl = static_cast<Image::Colors>(instr >> (32 + 21) & 0x7);
-            Image::Size isz   = static_cast<Image::Size>(instr >> (32 + 19) & 0x3);
+            Image::Colors icl;
+            Image::Size isz;
+
+            switch (instr >> (32 + 21) & 0x7) {
+              case 0x00:
+                icl = Image::Colors::RGBA;
+                break;
+
+              case 0x01:
+                icl = Image::Colors::YUV;
+                break;
+
+              case 0x02:
+                icl = Image::Colors::CI;
+                break;
+
+              case 0x03:
+                icl = Image::Colors::IA;
+                break;
+
+              case 0x04:
+                icl = Image::Colors::I;
+                break;
+
+              default:
+                throw X::RCP::BadCommand(sid(), instr, "Impossible color format given");
+                break;
+            }
+
+            switch (instr >> (32 + 19) & 0x3) {
+              case 0x00:
+                isz = Image::Size::u4;
+                break;
+
+              case 0x01:
+                isz = Image::Size::u8;
+                break;
+
+              case 0x02:
+                isz = Image::Size::u16;
+                break;
+
+              case 0x03:
+                isz = Image::Size::u32;
+                break;
+
+              default:
+                throw X::RCP::BadCommand(sid(), instr, "Impossible format size given");
+            }
 
             tile_fmt    = getFormat(icl, isz);
             width       = (instr >> 32 & 0xFFF) + 1;
             ram_address = instr & 0xFFFFFFFF;
+
+            if ((ram_address >> 24) > 0x0F) {
+                throw X::RCP::BadCommand(sid(), instr, "Bad segment for segment address");
+            }
         }
 
         std::string SETTIMG::sid() { return "G_SETTIMG"; }
@@ -768,6 +1090,10 @@ namespace RCP {
             assert(instr >> 56 == 0xFE);
 
             ram_address = instr & 0xFFFFFFFF;
+
+            if ((ram_address >> 24) > 0x0F) {
+                throw X::RCP::BadCommand(sid(), instr, "Bad segment for segment address");
+            }
         }
 
         std::string SETZIMG::sid() { return "G_SETZIMG"; }
@@ -779,12 +1105,63 @@ namespace RCP {
         SETCIMG::SETCIMG(uint64_t instr) {
             assert(instr >> 56 == 0xFF);
 
-            Image::Colors icl = static_cast<Image::Colors>(instr >> (32 + 21) & 0x7);
-            Image::Size isz   = static_cast<Image::Size>(instr >> (32 + 19) & 0x3);
+            Image::Colors icl;
+            Image::Size isz;
+
+            switch (instr >> (32 + 21) & 0x7) {
+              case 0x00:
+                icl = Image::Colors::RGBA;
+                break;
+
+              case 0x01:
+                icl = Image::Colors::YUV;
+                break;
+
+              case 0x02:
+                icl = Image::Colors::CI;
+                break;
+
+              case 0x03:
+                icl = Image::Colors::IA;
+                break;
+
+              case 0x04:
+                icl = Image::Colors::I;
+                break;
+
+              default:
+                throw X::RCP::BadCommand(sid(), instr, "Impossible color format given");
+                break;
+            }
+
+            switch (instr >> (32 + 19) & 0x3) {
+              case 0x00:
+                isz = Image::Size::u4;
+                break;
+
+              case 0x01:
+                isz = Image::Size::u8;
+                break;
+
+              case 0x02:
+                isz = Image::Size::u16;
+                break;
+
+              case 0x03:
+                isz = Image::Size::u32;
+                break;
+
+              default:
+                throw X::RCP::BadCommand(sid(), instr, "Impossible format size given");
+            }
 
             tile_fmt    = getFormat(icl, isz);
             width       = (instr >> 32 & 0xFFF) + 1;
             ram_address = instr & 0xFFFFFFFF;
+
+            if ((ram_address >> 24) > 0x0F) {
+                throw X::RCP::BadCommand(sid(), instr, "Bad segment for segment address");
+            }
         }
 
         std::string SETCIMG::sid() { return "G_SETCIMG"; }
@@ -792,7 +1169,6 @@ namespace RCP {
     }
 
     Command::Any * parseOneCmd(uint64_t cmd) {
-        std::clog << std::hex << std::uppercase << std::setfill('0') << std::setw(16) << cmd << "\n";
         // we use bitmasking to match commands so we have a better
         // chance of weeding out false positives. Mask out the variable
         // parts of a command, see if it still matches.
@@ -945,7 +1321,6 @@ namespace RCP {
             return new Command::SETCIMG(cmd);
 
         } else {
-            std::clog << "(invalid)\n";
             return nullptr;
         }
     }
@@ -953,10 +1328,23 @@ namespace RCP {
 
 namespace X {
     namespace RCP {
-        BadCommand::BadCommand(std::string cn) : cname(cn) { }
+        BadCommand::BadCommand(std::string cn, uint64_t cd, std::string eb) : cname(cn),
+                                                                              extra_bit(eb),
+                                                                              cmd(cd) { }
 
         std::string BadCommand::what() {
-            return "Can't read command '" + cname + "'.";
+            std::stringstream res;
+
+            res << "Can't read potential \"" << cname << "\" command";
+
+            res << " (0x" << std::hex << std::uppercase << std::setfill('0')
+                << std::setw(16) << cmd << ")";
+
+            if (extra_bit != "") {
+                res << ": " << extra_bit;
+            }
+
+            return res.str();
         }
     }
 }

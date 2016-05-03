@@ -12,12 +12,15 @@
 
 #include "endian.hpp"
 #include "Exceptions.hpp"
+#include "Fixed.hpp"
 
 #include <cstdint>
 #include <string>
 #include <array>
 #include <deque>
 #include <map>
+
+#include <iostream>
 
 namespace RCP {
     namespace Command {
@@ -144,8 +147,8 @@ namespace RCP {
             uint8_t extra_mipmaps;
             uint8_t tile_no;
             bool on;
-            uint16_t scale_S; // u0.16
-            uint16_t scale_T; // u0.16
+            ufix<0, 16> scale_S;
+            ufix<0, 16> scale_T;
 
             TEXTURE(uint64_t instr);
 
@@ -321,11 +324,11 @@ namespace RCP {
         // note: assumes 64-bit variant only, at least for now.
         class TEXRECT : public Any {
           public:
-            uint16_t lrx; // u10.2
-            uint16_t lry; // u10.2
+            ufix<10, 2> lrx;
+            ufix<10, 2> lry;
             uint8_t tile_no;
-            uint16_t ulx; // u10.2
-            uint16_t uly; // u10.2
+            ufix<10, 2> ulx;
+            ufix<10, 2> uly;
 
             TEXRECT(uint64_t instr);
 
@@ -335,11 +338,11 @@ namespace RCP {
 
         class TEXRECTFLIP : public Any {
           public:
-            uint16_t lrx; // u10.2
-            uint16_t lry; // u10.2
+            ufix<10, 2> lrx;
+            ufix<10, 2> lry;
             uint8_t tile_no;
-            uint16_t ulx; // u10.2
-            uint16_t uly; // u10.2
+            ufix<10, 2> ulx;
+            ufix<10, 2> uly;
 
             TEXRECTFLIP(uint64_t instr);
 
@@ -381,8 +384,8 @@ namespace RCP {
 
         class SETKEYGB : public Any {
           public:
-            uint16_t width_G; // u4.8
-            uint16_t width_B; // u4.8
+            ufix<4, 8> width_G;
+            ufix<4, 8> width_B;
             uint8_t center_G;
             uint8_t scale_G;
             uint8_t center_B;
@@ -396,7 +399,7 @@ namespace RCP {
 
         class SETKEYR : public Any {
           public:
-            uint16_t width_R; // u4.8
+            ufix<4, 8> width_R;
             uint8_t center_R;
             uint8_t scale_R;
 
@@ -409,7 +412,7 @@ namespace RCP {
         class SETCONVERT : public Any {
           public:
             // actually signed 9-bit numbers
-            std::array<int16_t, 6> k;
+            std::array<sfix<9, 0>, 6> k;
 
             SETCONVERT(uint64_t instr);
 
@@ -425,11 +428,11 @@ namespace RCP {
                 Odd  = 3,
             };
 
-            uint16_t ulx; // u10.2
-            uint16_t uly; // u10.2
+            ufix<10, 2> ulx;
+            ufix<10, 2> uly;
             Mode scanlines;
-            uint16_t lrx; // u10.2
-            uint16_t lry; // u10.2
+            ufix<10, 2> lrx;
+            ufix<10, 2> lry;
 
             SETSCISSOR(uint64_t instr);
 
@@ -482,11 +485,11 @@ namespace RCP {
 
         class SETTILESIZE : public Any {
           public:
-            uint16_t uls; // u10.2
-            uint16_t ult; // u10.2
+            ufix<10, 2> uls; // u10.2
+            ufix<10, 2> ult; // u10.2
             uint8_t tile_no;
-            uint16_t lrs; // u10.2
-            uint16_t lrt; // u10.2
+            ufix<10, 2> lrs; // u10.2
+            ufix<10, 2> lrt; // u10.2
 
             SETTILESIZE(uint64_t instr);
 
@@ -496,11 +499,11 @@ namespace RCP {
 
         class LOADBLOCK : public Any {
           public:
-            uint16_t uls; // u10.2
-            uint16_t ult; // u10.2
+            ufix<10, 2> uls; // u10.2
+            ufix<10, 2> ult; // u10.2
             uint8_t tile_no;
             uint16_t last_texel_idx;
-            uint16_t dxt; // u1.11
+            ufix<1, 11> dxt; // u1.11
 
             LOADBLOCK(uint64_t instr);
 
@@ -510,11 +513,11 @@ namespace RCP {
 
         class LOADTILE : public Any {
           public:
-            uint16_t uls; // u10.2
-            uint16_t ult; // u10.2
+            ufix<10, 2> uls; // u10.2
+            ufix<10, 2> ult; // u10.2
             uint8_t tile_no;
-            uint16_t lrs; // u10.2
-            uint16_t lrt; // u10.2
+            ufix<10, 2> lrs; // u10.2
+            ufix<10, 2> lrt; // u10.2
 
             LOADTILE(uint64_t instr);
 
@@ -548,10 +551,10 @@ namespace RCP {
 
         class FILLRECT : public Any {
           public:
-            uint16_t lrx; // u10.2, but forced to integers
-            uint16_t lry; // u10.2, integers
-            uint16_t ulx; // u10.2, integers
-            uint16_t uly; // u10.2, integers
+            ufix<10, 2> lrx; // RCP truncated(?) to ints
+            ufix<10, 2> lry; // RCP truncated(?) to ints
+            ufix<10, 2> ulx; // RCP truncated(?) to ints
+            ufix<10, 2> uly; // RCP truncated(?) to ints
 
             FILLRECT(uint64_t instr);
 
@@ -599,8 +602,8 @@ namespace RCP {
 
         class SETPRIMCOLOR : public Any {
           public:
-            uint8_t min_lod;  // u0.8
-            uint8_t lod_frac; // u0.8
+            ufix<0, 8> min_lod;  // u0.8
+            ufix<0, 8> lod_frac; // u0.8
             uint8_t R;
             uint8_t G;
             uint8_t B;
@@ -774,6 +777,7 @@ namespace RCP {
                 try {
                     thecmd = parseOneCmd(mbcmd);
                 } catch (Exception & e) {
+                    std::clog << e.what() << "\n";
                     // if an error occurs, at least for now we'll assume it
                     // means it's actually an invalid command
                     thecmd = nullptr;
@@ -808,9 +812,11 @@ namespace X {
         class BadCommand : public Exception {
           private:
             std::string cname;
+            std::string extra_bit;
+            uint64_t cmd;
 
           public:
-            BadCommand(std::string cn);
+            BadCommand(std::string cn, uint64_t cd, std::string eb = "");
 
             std::string what() override;
         };

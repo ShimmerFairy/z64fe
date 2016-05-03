@@ -1,0 +1,61 @@
+BUILD OPTIONS
+================================================================================
+
+Here we describe all the build options specific to Z64Fe; anything that's
+typical for CMake won't be discussed here.
+
+================================================================================
+Doxygen
+================================================================================
+
+* BUILD_DOCUMENTATION :: This option enables the building of doxygen API
+                         documentation. The default value of this depends on
+                         whether doxygen could be found by CMake. Documentation
+                         will NOT be built by default; use 'make doc' to do it.
+
+                         This option does not affect the building of user-level
+                         documentation for the program, just if you get nice
+                         shiny documentation for the actual code documentation.
+
+Other options are as expected for a project dependency in CMake.
+
+================================================================================
+Compiler Flags
+================================================================================
+
+Z64Fe has a bit of an interesting setup with regards to handling compiler
+flags. We've basically set up a compiler-based set of CXX_FLAGS for neatly
+handling the differences between compiler options.
+
+Note that we don't bother setting up flags that CMake will handle for us, this
+is really only because CMake doesn't seem to offer the support for adding to its
+automatic handling of compiler flags.
+
+The flags are of the format
+
+Z64FE_CXX_FLAGS__{build type}
+Z64FE_CXX_FLAGS_{compiler}_{build type}
+
+Where {compiler} is the name of your compiler as identified by
+CMAKE_CXX_COMPILER_ID (case sensitive of course), and {build type} is,
+predictably, the build type. The first variant, without {compiler}, is applied
+to any compiler of that build type. For example,
+
+Z64FE_CXX_FLAGS_GNU_RELEASE
+
+Sets up flags specific to g++ for Release builds, and
+
+Z64FE_CXX_FLAGS_AppleClang_RELWITHDEBINFO
+
+Gives flags for the "Release with debug info" target when using Apple's clang
+compiler.
+
+Note that Z64FE_CXX_FLAGS__ consists of flags every compiler and every release
+type gets.
+
+All these flags are assimilated into the usual CMAKE_CXX_FLAGS_{build type}
+flags for use. The order in which they are assembled is currently, for each
+build type:
+
+(existing standard CMAKE flags) (compiler-agnostic Z64Fe flags)
+(compiler-specific Z64Fe flags).

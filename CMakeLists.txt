@@ -8,6 +8,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+
 # use CMake's provided functionality for setting the standard we want
 # (non-dialect C++14). If ever we decide to switch o'er to C++17 and CMake
 # doesn't handle that yet, we'll have to (temporarily?) do this manually.
@@ -93,6 +95,8 @@ set(CMAKE_CXX_FLAGS_DEBUG          "${CMAKE_CXX_FLAGS_DEBUG} ${Z64FE_CXX_FLAGS__
 set(CMAKE_CXX_FLAGS_MINSIZEREL     "${CMAKE_CXX_FLAGS_MINSIZEREL} ${Z64FE_CXX_FLAGS__MINSIZEREL} ${Z64FE_CXX_FLAGS_${CMAKE_CXX_COMPILER_ID}_MINSIZEREL}")
 set(CMAKE_CXX_FLAGS_RELEASE        "${CMAKE_CXX_FLAGS_RELEASE} ${Z64FE_CXX_FLAGS__RELEASE} ${Z64FE_CXX_FLAGS_${CMAKE_CXX_COMPILER_ID}_RELEASE}")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${Z64FE_CXX_FLAGS__RELWITHDEBINFO} ${Z64FE_CXX_FLAGS_${CMAKE_CXX_COMPILER_ID}_RELWITHDEBINFO}")
+
+find_package(GMP REQUIRED)
 
 # now let's find Qt5 and other needed packages!
 find_package(Qt5Widgets)
