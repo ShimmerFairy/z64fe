@@ -66,7 +66,7 @@ std::vector<TextAST::Box> readASCII_OoT(std::vector<uint8_t>::iterator & takethi
                 break;
 
               case 0x02:
-                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::EndMessage));
+                //the_list.back().curline().push(TextAST::Fragment(TextAST::Type::EndMessage));
                 cont = false;
                 break;
 
@@ -369,7 +369,7 @@ std::vector<TextAST::Box> readShiftJIS_OoT(std::vector<uint8_t>::iterator & take
             second = *takethis++;
             switch (second) {
               case 0x70:
-                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::EndMessage));
+                //the_list.back().curline().push(TextAST::Fragment(TextAST::Type::EndMessage));
                 cont = false;
                 break;
 
@@ -889,7 +889,7 @@ std::vector<TextAST::Box> readASCII_MM(std::vector<uint8_t>::iterator & indata) 
                 // I'd guess 0xBC for d-pad, but not listed
 
               case 0xBF:
-                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::EndMessage));
+                //the_list.back().curline().push(TextAST::Fragment(TextAST::Type::EndMessage));
                 cont = false;
                 break;
 
@@ -1376,7 +1376,7 @@ std::vector<TextAST::Box> readShiftJIS_MM(std::vector<uint8_t>::iterator & indat
             second = *indata++;
 
             if (second == 0x00) {
-                the_list.back().curline().push(TextAST::Fragment(TextAST::Type::EndMessage));
+                //the_list.back().curline().push(TextAST::Fragment(TextAST::Type::EndMessage));
                 cont = false;
             } else {
                 // give back second, literal 0x05

@@ -854,7 +854,7 @@ class Fixed {
         mpf_t asfloat;
         mpf_init2(asfloat, I + F);
         mpf_set_z(asfloat, that.thenum);
-        mpf_div_2exp(asfloat, F);
+        mpf_div_2exp(asfloat, asfloat, F);
 
         os << asfloat;
 
@@ -883,9 +883,11 @@ class Fixed {
 
         is >> asfloat;
 
-        mpf_mul_2exp(asfloat, F);
+        mpf_mul_2exp(asfloat, asfloat, F);
 
         mpz_set_f(that.thenum, asfloat);
+
+        mpf_clear(asfloat);
 
         if (mpz_cmp_ui(that.thenum, std::numeric_limits<Fixed>::max()) > 0
             || mpz_cmp_ui(that.thenum, std::numeric_limits<Fixed>::min()) < 0) {

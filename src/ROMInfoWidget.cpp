@@ -5,6 +5,7 @@
 #include "ROMInfoWidget.hpp"
 #include "utility.hpp"
 
+#include <QSpacerItem>
 #include <QSettings>
 #include <QFileDialog>
 #include <QMessageBox>
@@ -46,8 +47,10 @@ ROMInfoWidget::ROMInfoWidget(QWidget * parent) : QWidget(parent) {
     wlay->addWidget(crc_val, 3, 1, 1, 1, Qt::AlignLeft);
     wlay->addWidget(crc_chk, 3, 2, 1, 1);
 
-    wlay->addWidget(savebs, 4, 0, 1, 3);
-    wlay->addWidget(viewtxt, 5, 0, 1, 3);
+    wlay->addItem(new QSpacerItem(0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding), 4, 0, 1, 3);
+
+    wlay->addWidget(savebs, 5, 0, 1, 3);
+    wlay->addWidget(viewtxt, 6, 0, 1, 3);
 
     setLayout(wlay);
 
