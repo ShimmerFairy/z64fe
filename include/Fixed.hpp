@@ -147,7 +147,7 @@ class Fixed {
         // now we want to make sure to un-negate the number if needed,
         // two's-complement style (i.e. a reinterpret cast).
 
-        if (!SIGNED && TS && mpz_cmp_si(thenum, 0) == -1) {
+        if (!SIGNED && TS && mpz_cmp_si(thenum, 0) < 0) {
             mpz_com(thenum, thenum);
             mpz_add_ui(thenum, thenum, 1);
         }
@@ -511,54 +511,160 @@ class Fixed {
         return *this %= Fixed(oval, true);
     }
 
+    /** \brief AND-assignment operator with another Fixed object.
+     *
+     *  Does a bitwise AND between the two Fixed values and stores the result in
+     *  the left-hand side.
+     *
+     *  \param[in] that The value to AND the left side against.
+     *
+     *  \returns A reference to the modified Fixed object.
+     *
+     */
     Fixed & operator&=(const Fixed & that) {
         mpz_and(thenum, thenum, that.thenum);
 
         return *this;
     }
 
+    /** \brief AND-assignment operator with an integral value.
+     *
+     *  Does a bitwise AND between the Fixed object and the integral value
+     *  interpreted as raw data, and stores the result in the Fixed object.
+     *
+     *  \tparam T type of the right-hand value. Must be integral.
+     *
+     *  \param[in] oval The value to AND against the fixed value.
+     *
+     *  \returns A reference to the modified Fixed object.
+     *
+     *  \note As a bitwise operation, the right-hand value is always interpreted
+     *        as a raw fixed-point value, \em not as an integer.
+     *
+     */
     template<typename T,
              typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
     Fixed & operator&=(const T & oval) {
         return *this &= Fixed(oval, false);
     }
 
+    /** \brief OR-assignment operator with another Fixed object.
+     *
+     *  Does a bitwise OR between the two Fixed values and stores the result in
+     *  the left-hand side.
+     *
+     *  \param[in] that The value to OR the left side against.
+     *
+     *  \returns A reference to the modified Fixed object.
+     *
+     */
     Fixed & operator|=(const Fixed & that) {
         mpz_ior(thenum, thenum, that.thenum);
 
         return *this;
     }
 
+    /** \brief OR-assignment operator with an integral value.
+     *
+     *  Does a bitwise OR between the Fixed object and the integral value
+     *  interpreted as raw data, and stores the result in the Fixed object.
+     *
+     *  \tparam T type of the right-hand value. Must be integral.
+     *
+     *  \param[in] oval The value to OR against the fixed value.
+     *
+     *  \returns A reference to the modified Fixed object.
+     *
+     *  \note As a bitwise operation, the right-hand value is always interpreted
+     *        as a raw fixed-point value, \em not as an integer.
+     *
+     */
     template<typename T,
              typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
     Fixed & operator|=(const T & oval) {
         return *this |= Fixed(oval, false);
     }
 
+    /** \brief XOR-assignment operator with another Fixed object.
+     *
+     *  Does a bitwise XOR between the two Fixed values and stores the result in
+     *  the left-hand side.
+     *
+     *  \param[in] that The value to XOR the left side against.
+     *
+     *  \returns A reference to the modified Fixed object.
+     *
+     */
     Fixed & operator^=(const Fixed & that) {
         mpz_xor(thenum, thenum, that.thenum);
 
         return *this;
     }
 
+    /** \brief XOR-assignment operator with an integral value.
+     *
+     *  Does a bitwise XOR between the Fixed object and the integral value
+     *  interpreted as raw data, and stores the result in the Fixed object.
+     *
+     *  \tparam T type of the right-hand value. Must be integral.
+     *
+     *  \param[in] oval The value to XOR against the fixed value.
+     *
+     *  \returns A reference to the modified Fixed object.
+     *
+     *  \note As a bitwise operation, the right-hand value is always interpreted
+     *        as a raw fixed-point value, \em not as an integer.
+     *
+     */
     template<typename T,
              typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
     Fixed & operator^=(const T & oval) {
         return *this ^= Fixed(oval, false);
     }
 
+    /** \brief Left shift assignment operator
+     *
+     *   This operator does a left shift of the Fixed object by the number of
+     *   bits specified on the right-hand side, and stores that in the Fixed
+     *   object.
+     *
+     *   \param[in] amt The number of bits to shift leftwards by.
+     *
+     *   \returns A reference to the modified Fixed object.
+     *
+     */
     Fixed & operator<<=(const size_t & amt) {
         mpz_mul_2exp(thenum, thenum, amt);
 
         return *this;
     }
 
+    /** \brief Right shift assignment operator
+     *
+     *   This operator does an \b arithmetic (i.e. sign-extended) right shift of
+     *   the Fixed object by the number of bits specified on the right-hand
+     *   side, and stores that in the Fixed object.
+     *
+     *   \param[in] amt The number of bits to shift leftwards by.
+     *
+     *   \returns A reference to the modified Fixed object.
+     *
+     */
     Fixed & operator >>=(const size_t & amt) {
         mpz_fdiv_q_2exp(thenum, thenum, amt);
 
         return *this;
     }
 
+    /** \brief Inverts the bits of the number
+     *
+     *  This prefix operator returns a \em copy of the number with each bit
+     *  inverted.
+     *
+     *  \returns A new Fixed object representing the bitwise complement of the
+     *           number.
+     *
+     */
     Fixed operator~() const {
         Fixed res(*this);
 
@@ -567,10 +673,23 @@ class Fixed {
         return *this;
     }
 
+    /** \brief Negates the number
+     *
+     *  This prefix operator returns a \em copy of the number's additive
+     *  inverse.
+     *
+     *  \warning This operator <b>does nothing</b> on unsigned Fixed classes. It
+     *           simply returns a copy of itself.
+     *
+     *  \returns A copy of the Fixed object, negated if possible.
+     *
+     */
     Fixed operator-() const {
         Fixed res(*this);
 
-        mpz_neg(res.thenum, res.thenum);
+        if (SIGNED) {
+            mpz_neg(res.thenum, res.thenum);
+        }
 
         return *this;
     }
@@ -581,11 +700,21 @@ class Fixed {
     // also, these done with a macro to avoid repetition
 
 #define FRIENDOP(op, flag)                                              \
+    /** \brief Operator op between two same Fixed objects.              \
+     *                                                                  \
+     *  See the documentation on its assignment form for details.       \
+     *                                                                  \
+     */                                                                 \
     friend Fixed operator op (const Fixed & a, const Fixed & b) {       \
         Fixed res(a);                                                   \
         res op##= b;                                                    \
         return res;                                                     \
     }                                                                   \
+    /** \brief Operator op between a Fixed object and integral          \
+     *                                                                  \
+     *  See the documentation on its assignment form for details.       \
+     *                                                                  \
+     */                                                                 \
     template<typename T,                                                \
              typename std::enable_if<std::is_integral<T>::value>::type* = nullptr> \
     friend Fixed operator op (const Fixed & a, const T & b) {           \
@@ -593,6 +722,11 @@ class Fixed {
         res op##= b;                                                    \
         return res;                                                     \
     }                                                                   \
+    /** \brief Operator op between an integral and Fixed object         \
+     *                                                                  \
+     *  See the documentation on its assignment form for details.       \
+     *                                                                  \
+     */                                                                 \
     template<typename T,                                                \
              typename std::enable_if<std::is_integral<T>::value>::type* = nullptr> \
     friend Fixed operator op (const T & a, const Fixed & b) {           \
@@ -612,46 +746,153 @@ class Fixed {
 
 #undef FRIENDOP
 
+    /** \brief Left shift Fixed number.
+     *
+     *  This operator returns a \em copy of the Fixed number on the left when
+     *  it's left-shifted by the number of bits on the right.
+     *
+     *  \param[in,out] a The Fixed object to shift.
+     *
+     *  \param[in,out] b The number of bits to shift by.
+     *
+     *  \returns A new Fixed object representing \c a left-shifted.
+     *
+     *  \note For a mutating left-shift, use \c <<= instead.
+     *
+     */
     friend Fixed operator<<(const Fixed & a, const size_t & b) {
         Fixed res(a);
         res <<= b;
         return res;
     }
 
+    /** \brief Right shift Fixed number.
+     *
+     *  This operator returns a \em copy of the Fixed number on the left when
+     *  it's right-shifted by the number of bits on the right. This is an \b
+     *  arithmetic right-shift, i.e. the sign-extended kind.
+     *
+     *  \param[in,out] a The Fixed object to shift.
+     *
+     *  \param[in,out] b The number of bits to shift by.
+     *
+     *  \returns A new Fixed object representing \c a right-shifted.
+     *
+     *  \note For a mutating right-shift, use \c >>= instead.
+     *
+     */
     friend Fixed operator>>(const Fixed & a, const size_t & b) {
         Fixed res(a);
         res >>= b;
         return res;
     }
 
-    // for use in boolean contexts
+    /** \brief Boolean cast operator
+     *
+     *  This is an \c explicit cast operator to bool, to allow similar usage to
+     *  other numeric types.
+     *
+     *  \returns \c false if the number is zero, \c true otherwise.
+     *
+     */
     explicit operator bool() const {
         return mpz_cmp_ui(thenum, 0) != 0;
     }
 
-    // relational ops
+    /** \brief Tests if two Fixed objects are equal.
+     */
     bool operator==(const Fixed & that) const {
         return mpz_cmp(thenum, that.thenum) == 0;
     }
 
+    /** \brief Tests if the left-hand Fixed object is less than the right.
+     */
     bool operator<(const Fixed & that) const {
-        return mpz_cmp(thenum, that.thenum) == -1;
+        return mpz_cmp(thenum, that.thenum) < 0;
     }
 
+    /** \brief Tests if the left-hand Fixed object is greater than the right.
+     */
     bool operator>(const Fixed & that) const {
-        return mpz_cmp(thenum, that.thenum) == 1;
+        return mpz_cmp(thenum, that.thenum) > 0;
     }
 
+    /** \brief Tests if two Fixed objects are not equal.
+     */
     bool operator!=(const Fixed & that) const {
         return !(*this == that);
     }
 
+    /** \brief Tests if the left-hand Fixed object is less than or equal to the
+     *         right.
+     */
     bool operator<=(const Fixed & that) const {
         return !(*this > that);
     }
 
+    /** \brief Tests if the left-hand Fixed object is greater than or equal to
+     *         the right.
+     */
     bool operator>=(const Fixed & that) const {
         return !(*this < that);
+    }
+
+    /** \brief Output streaming operator
+     *
+     *  Writes to an instance of std::ostream the number contained in the Fixed
+     *  object. The output matches what the value means, as opposed to its raw
+     *  form.
+     *
+     *  \param[in,out] os The stream to write to.
+     *
+     *  \param[in] that The Fixed number to write to stream.
+     *
+     *  \returns The \c std::ostream reference that was passed to this operator.
+     *
+     */
+    friend std::ostream & operator<<(std::ostream & os, const Fixed & that) {
+        mpf_t asfloat;
+        mpf_init2(asfloat, I + F);
+        mpf_set_z(asfloat, that.thenum);
+        mpf_div_2exp(asfloat, F);
+
+        os << asfloat;
+
+        mpf_clear(asfloat);
+
+        return os;
+    }
+
+    /** \brief Input streaming operator
+     *
+     *  Reads a radix-point-based representation of the fixed-point number into
+     *  the given Fixed object. If the input number is too precise, the extra
+     *  fractional bits will be cut off. Similarly, an input number that's out
+     *  of range will be subjected to modulo arithmetic.
+     *
+     *  \param[in,out] is A reference to the input stream
+     *
+     *  \param[out] that The Fixed to write to.
+     *
+     *  \returns The \c std::istream reference that was passed to this operator.
+     *
+     */
+    friend std::istream & operator>>(std::istream & is, Fixed & that) {
+        mpf_t asfloat;
+        mpf_init2(asfloat, I + F);
+
+        is >> asfloat;
+
+        mpf_mul_2exp(asfloat, F);
+
+        mpz_set_f(that.thenum, asfloat);
+
+        if (mpz_cmp_ui(that.thenum, std::numeric_limits<Fixed>::max()) > 0
+            || mpz_cmp_ui(that.thenum, std::numeric_limits<Fixed>::min()) < 0) {
+            mpz_tdiv_r_2exp(that.thenum, that.thenum, I + F);
+        }
+
+        return is;
     }
 };
 
@@ -697,7 +938,10 @@ namespace std {
             mpz_mul_2exp(res, res, FI + FF);
             mpz_neg(res, res);
 
-            return Fixed<FS, FI, FF>(res);
+            Fixed<FS, FI, FF> theres(res);
+            mpz_clear(res);
+
+            return theres;
         }
 
         static constexpr Fixed<FS, FI, FF> lowest() { return min(); }
@@ -710,7 +954,10 @@ namespace std {
             mpz_mul_2exp(res, res, FI + FF);
             mpz_sub_ui(res, res, 1);
 
-            return Fixed<FS, FI, FF>(res);
+            Fixed<FS, FI, FF> theres(res);
+            mpz_clear(res);
+
+            return theres;
         }
 
         // note: the standard says this is only meaningful if not an integer,
