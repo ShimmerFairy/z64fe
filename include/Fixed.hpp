@@ -161,7 +161,7 @@ class Fixed {
 
         mpz_t amask;
         mpz_init(amask);
-        mpz_set(amask, 1);
+        mpz_set_ui(amask, 1);
         mpz_mul_2exp(amask, amask, I + F);
         mpz_sub_ui(amask, amask, 1);
 
@@ -935,7 +935,7 @@ namespace std {
 
             mpz_t res;
             mpz_init(res);
-            mpz_set(res, 1);
+            mpz_set_ui(res, 1);
 
             mpz_mul_2exp(res, res, FI + FF);
             mpz_neg(res, res);
@@ -951,7 +951,7 @@ namespace std {
         static constexpr Fixed<FS, FI, FF> max() {
             mpz_t res;
             mpz_init(res);
-            mpz_set(res, 1);
+            mpz_set_ui(res, 1);
 
             mpz_mul_2exp(res, res, FI + FF);
             mpz_sub_ui(res, res, 1);
