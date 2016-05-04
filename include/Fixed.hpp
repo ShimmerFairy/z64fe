@@ -15,13 +15,6 @@
 #include <cstddef>
 #include <type_traits>
 
-// note: the enable-ifs we use to make sure raw integer types are correctly
-// signed or not do _not_ check for the signedness of the type; we're more
-// liberal and just check that the given integer isn't negative when it can't
-// be. If we checked on types, then you'd have to type literal suffixes all the
-// time for unsigned fixnums (e.g. Fixed & 100u), and in general I personally
-// think unsuffixed literals shouldn't be rigidly "int" numbers.
-
 /** \brief Class for fixed-point math
  *
  *  This class implements fixed-point math needed in various parts of the
@@ -34,21 +27,67 @@
  *  the C structs/functions directly gives us more control (e.g. setting the
  *  initial bitsize of the member mpz item).
  *
+ *  \tparam SIGNED indicates if this is a signed or unsigned fixed-point number.
+ *
+ *  \tparam I The number of bits for the integral part. May be zero, in which
+ *            case the fixnum can't reach 1.0
+ *
+ *  \tparam F The number of bits for the fractional part. May be zero, in which
+ *            case the fixum is an integral type.
+ *
+ *  \warning At least currently, overflow on signed integers is not guaranteed
+ *           (just like with standard C++). Behavior may be unexpected for your
+ *           purposes.
+ *
  */
 template<bool SIGNED, size_t I, size_t F>
 class Fixed {
   private:
-    mpz_t thenum;
+    mpz_t thenum; ///< The bigint we use to store the number
 
   public:
     // make all Fixed classes friends with each other
-    template<bool TS, size_t TI, size_t TF>
-    friend class Fixed;
+    template<bool TS, size_t TI, size_t TF> friend class Fixed;
 
+    /** \brief Zero-initializing constructor
+     *
+     *  This constructor, naturally enough, initializes the fixed-point number
+     *  to zero.
+     *
+     */
     Fixed() {
         mpz_init2(thenum, I + F);
     }
 
+    /** \brief Construct fixed-point number from integer type.
+     *
+     *  This constructor takes an integral type value and turns it into a
+     *  fixed-point number. The optional flag parameter indicates if the given
+     *  value is meant to be interpreted as an integer, or as raw data to
+     *  initialize the value with.
+     *
+     *  If interpreted as an integer, the value is appropriately shifted so the
+     *  fixed-point number is mathematically equal to the given value.
+     *
+     *  If interpreted as raw data, the integer is presumed to encode the number
+     *  in written order; that is, the F fraction bits are the F least
+     *  significant bits, and the next I bits are the integral bits. Any
+     *  remaining bits in the number are ignored.
+     *
+     *  \tparam T the type of the value to construct from. Must be of integral
+     *            type (as detected by the \c std::is_integral class).
+     *
+     *  \param[in] rawval The value to construct the fixnum from. May be
+     *                    interpreted as an integral or as raw data.
+     *
+     *  \param[in] isint Flag indicating how to interpret the data. If true,
+     *                   data is an integer, if false data is raw. Optional, and
+     *                   false by default.
+     *
+     *  \warning Results are undefined if an unsigned fixnum is given a negative
+     *           number here.
+     *
+     */
     template<typename T,
              typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
     Fixed(const T & rawval, const bool & isint = false) {
@@ -65,11 +104,39 @@ class Fixed {
         }
     }
 
+    /** \brief Construct from existing gmp integer.
+     *
+     *  This constructor takes a premade mpz_t integer and copies it. Only meant
+     *  for the numeric_limits specialization, is not guaranteed to last.
+     *
+     *  \param[in] rawmprval The mpz_t integer to copy.
+     *
+     */
     Fixed(mpz_t rawmprval) {
         mpz_init2(thenum, I + F);
         mpz_set(thenum, rawmprval);
     }
 
+    /** \brief Constructor using a value of a different fixed-point type
+     *
+     *  This constructor takes a fixed-point number whose type is different to
+     *  that of the destination type, and takes on its value as precisely as it
+     *  can. If the destination type has too few integer and/or fraction bits,
+     *  precision will be lost. (Too-precise fraction bits will disappear, as
+     *  well as integer bits which are too great in magnitude).
+     *
+     *  \tparam TS Whether the source type is signed or not.
+     *
+     *  \tparam TI Integer bit count of source type.
+     *
+     *  \tparam TF Fraction bit count of source type.
+     *
+     *  Note that these template parameters will be deduced from the Fixed type
+     *  given as argument.
+     *
+     *  \param[in] that Value to copy to this number.
+     *
+     */
     template<bool TS, size_t TI, size_t TF,
              typename std::enable_if<!((TS == SIGNED) && (I == TI) && (F == TF))>::type* = nullptr>
     Fixed(const Fixed<TS, TI, TF> & that) {
@@ -101,6 +168,20 @@ class Fixed {
         mpz_and(thenum, thenum, amask);
     }
 
+    /** \brief Raw value assignment operator
+     *
+     *  Assigns the value given to the Fixed number. The given value is always
+     *  interpreted as raw data (i.e. the value constructor with the default
+     *  false option).
+     *
+     *  \tparam T the type of the value on the right-hand side. Must be integral
+     *            (as detected by \c std::is_integral).
+     *
+     *  \param[in] rval The raw value to assign to this object.
+     *
+     *  \returns A reference to the assigned-to object.
+     *
+     */
     template<typename T,
              typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
     Fixed & operator=(const T & rval) {
@@ -108,11 +189,15 @@ class Fixed {
         return *this;
     }
 
+    /** \brief Copy constructor
+     */
     Fixed(const Fixed & that) {
         mpz_init2(thenum, I + F);
         mpz_set(thenum, that.thenum);
     }
 
+    /** \brief Copy assignment operator
+     */
     Fixed & operator=(const Fixed & that) {
         if (this != &that) {
             mpz_set(thenum, that.thenum);
@@ -121,8 +206,34 @@ class Fixed {
         return *this;
     }
 
+    /** \brief Destructor
+     */
     ~Fixed() { mpz_clear(thenum); }
 
+    /** \brief Return number as raw data
+     *
+     *  This returns the number stored internally as raw data. If the number
+     *  stored within can fit into an <tt>unsigned long</tt> or <tt>signed
+     *  long</tt> as well as the chosen return type, then the return value can
+     *  be passed to the Fixed(const T &) constructor to construct the same
+     *  value again.
+     *
+     *  If this is an unsigned Fixed class, then the returned number will be
+     *  truncated to the size of an <tt>unsigned long</tt>, as that's the return
+     *  type of gmp's retrieval function for unsigned numbers. For signed
+     *  numbers, this is <tt>signed long</tt>. Further truncation may happen in
+     *  the conversion to type \c T.
+     *
+     *  \tparam T The type of value to return, must be integral.
+     *
+     *  \returns The value of the fixed-point number as raw data, truncated in
+     *           magnitude to the smaller of <tt>(un)signed long</tt> or \c T.
+     *
+     *  \warning Further truncation from <tt>signed long</tt> to \c T cannot be
+     *           guaranteed, as per the standard. Conversion of a negative value
+     *           to an unsigned type \c T also cannot be guaranteed.
+     *
+     */
     template<typename T,
              typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
     T getRawVal() const {
@@ -133,6 +244,21 @@ class Fixed {
         }
     }
 
+    /** \brief Addition-assignment operator against another Fixed of same type.
+     *
+     *  Adds the given fixed-point number to the Fixed object on the left,
+     *  performing modulo arithmetic as needed to fit in the specified range.
+     *
+     *  \param[in] that Another Fixed number of the same type as the destination
+     *                  number.
+     *
+     *  \returns A reference to the modified Fixed number.
+     *
+     *  \warning Overflow behavior is undefined for signed Fixed
+     *           classes. Current behavior will not necessarily be kept in the
+     *           future.
+     *
+     */
     Fixed & operator+=(const Fixed & that) {
         mpz_add(thenum, thenum, that.thenum);
 
@@ -145,12 +271,47 @@ class Fixed {
         return *this;
     }
 
+    /** \brief Addition-assignment operator with integral type
+     *
+     *  Converts the given value on the right to an integer of the same Fixed
+     *  type of the value on the left, and adds them together.
+     *
+     *  \tparam T type of the value given on the right. Must be integral, as
+     *            stated by \c std::is_integral.
+     *
+     *  \param[in] oval The value to interpret as an integer.
+     *
+     *  \returns A reference to the modified Fixed object.
+     *
+     *  \note As an arithmetic operation, the value on the right is always
+     *        interpreted as an integer, \em not as raw data.
+     *
+     *  \warning Behavior is undefined if overflow occurs on signed Fixed
+     *           classes.
+     *
+     *  \warning Behavior is undefined if the Fixed object on the left is of
+     *           unsigned type and the value on the right is a negative number.
+     *
+     */
     template<typename T,
              typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
     Fixed & operator+=(const T & oval) {
         return *this += Fixed(oval, true);
     }
 
+    /** \brief Subtraction-assignment operator with same-typed Fixed value.
+     *
+     *  Does subtraction with the two values on either side, and stores the
+     *  result in the Fixed on the left. Modulo arithmetic is done in the case
+     *  of overflow.
+     *
+     *  \param[in] that Value to subtract from the left-hand side value.
+     *
+     *  \returns A reference to the modified Fixed object.
+     *
+     *  \warning Behavior is undefined for overflow on signed Fixed classes.
+     *
+     */
     Fixed & operator-=(const Fixed & that) {
         mpz_sub(thenum, thenum, that.thenum);
 
@@ -163,12 +324,47 @@ class Fixed {
         return *this;
     }
 
+    /** \brief Subtraction-assignment operator with integral type
+     *
+     *  Converts the given value on the right to an integer of the same Fixed
+     *  type of the value on the left, and subtracts them.
+     *
+     *  \tparam T type of the value given on the right. Must be integral, as
+     *            stated by \c std::is_integral.
+     *
+     *  \param[in] oval The value to interpret as an integer.
+     *
+     *  \returns A reference to the modified Fixed object.
+     *
+     *  \note As an arithmetic operation, the value on the right is always
+     *        interpreted as an integer, \em not as raw data.
+     *
+     *  \warning Behavior is undefined if overflow occurs on signed Fixed
+     *           classes.
+     *
+     *  \warning Behavior is undefined if the Fixed object on the left is of
+     *           unsigned type and the value on the right is a negative number.
+     *
+     */
     template<typename T,
              typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
     Fixed & operator-=(const T & oval) {
         return *this -= Fixed(oval, true);
     }
 
+    /** \brief Multiplication-assignment operator with same-typed Fixed number.
+     *
+     *  Multiplies the two given values, and stores the result in the left-hand
+     *  value. Modulo arithmetic is performed in the case of overflow.
+     *
+     *  \param[in] that The value to multiply the left-hand side against.
+     *
+     *  \returns A reference to the modified Fixed object.
+     *
+     *  \warning Behavior is undefined in the case of overflow on signed Fixed
+     *           classes.
+     *
+     */
     Fixed & operator*=(const Fixed & that) {
         // the use of bigints in this class means the multiply won't lose any
         // precision by nature of being done.
@@ -186,12 +382,47 @@ class Fixed {
         return *this;
     }
 
+    /** \brief Multiplication-assignment operator with integral type
+     *
+     *  Converts the given value on the right to an integer of the same Fixed
+     *  type of the value on the left, and multiplies them together.
+     *
+     *  \tparam T type of the value given on the right. Must be integral, as
+     *            stated by \c std::is_integral.
+     *
+     *  \param[in] oval The value to interpret as an integer.
+     *
+     *  \returns A reference to the modified Fixed object.
+     *
+     *  \note As an arithmetic operation, the value on the right is always
+     *        interpreted as an integer, \em not as raw data.
+     *
+     *  \warning Behavior is undefined if overflow occurs on signed Fixed
+     *           classes.
+     *
+     *  \warning Behavior is undefined if the Fixed object on the left is of
+     *           unsigned type and the value on the right is a negative number.
+     *
+     */
     template<typename T,
              typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
     Fixed & operator*=(const T & oval) {
         return *this *= Fixed(oval, true);
     }
 
+    /** \brief Division-assignment operator against value of same Fixed type.
+     *
+     *  Divides the left-hand side by the right-hand side and stores it in the
+     *  left-hand side. Truncation division is performed, i.e. the same kind
+     *  done between two integers in standard C++. Note that modulo arithmetic
+     *  is \em not currently performed, since values should never exceed the
+     *  allowed magnitude of the class after a division operation.
+     *
+     *  \param[in] that Value to divide the left by.
+     *
+     *  \returns A reference to the modified Fixed object.
+     *
+     */
     Fixed & operator/=(const Fixed & that) {
         // we have to shift our left operand leftwards beforehand, to counter
         // the natural truncation to happen from the division operation (if we
@@ -211,12 +442,43 @@ class Fixed {
         return *this;
     }
 
+    /** \brief Division-assignment operator against an integral value.
+     *
+     *  Converts the right-hand side to a Fixed object and divides the left-hand
+     *  side by it.
+     *
+     *  \tparam T The type of the value on the right, must be integral.
+     *
+     *  \param[in] oval The value to divide the left by.
+     *
+     *  \returns A reference to the modified Fixed object.
+     *
+     *  \note As an arithmetic operation, the item on the right is always
+     *        interpreted as an integer, \em not as raw data.
+     *
+     *  \warning Behavior is undefined if the left-hand side is an unsigned
+     *           Fixed type, and the right-hand side is a negative number.
+     *
+     */
     template<typename T,
              typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
     Fixed & operator/=(const T & oval) {
         return *this /= Fixed(oval, true);
     }
 
+    /** \brief Modulo-assignment operator against value of same Fixed type.
+     *
+     *  Divides the left-hand side by the right-hand side and stores the
+     *  remainder in the left-hand side. Truncation division is performed to
+     *  arrive at the remainder, i.e. the same kind done between two integers in
+     *  standard C++. Note that no corrections are made on the result, since we
+     *  don't expect values from this operation to overflow.
+     *
+     *  \param[in] that Value to divide the left by.
+     *
+     *  \returns A reference to the modified Fixed object.
+     *
+     */
     Fixed & operator%=(const Fixed & that) {
         mpz_mul_2exp(thenum, thenum, F);
 
@@ -225,6 +487,24 @@ class Fixed {
         return *this;
     }
 
+    /** \brief Modulo-assignment operator against an integral value.
+     *
+     *  Converts the right-hand side to a Fixed object and divides the left-hand
+     *  side by it to get the remainder.
+     *
+     *  \tparam T The type of the value on the right, must be integral.
+     *
+     *  \param[in] oval The value to divide the left by for the integral.
+     *
+     *  \returns A reference to the modified Fixed object.
+     *
+     *  \note As an arithmetic operation, the item on the right is always
+     *        interpreted as an integer, \em not as raw data.
+     *
+     *  \warning Behavior is undefined if the left-hand side is an unsigned
+     *           Fixed type, and the right-hand side is a negative number.
+     *
+     */
     template<typename T,
              typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
     Fixed & operator%=(const T & oval) {
